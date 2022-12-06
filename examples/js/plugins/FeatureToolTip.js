@@ -81,9 +81,51 @@ var FeatureToolTip = (function _() {
         for (var p = 0; p < features.length; p++) {
             feature = features[p];
             geometry = feature.geometry;
-            style = (geometry.properties && geometry.properties.style) || feature.style || layer.style;
             var context = { globals: {}, properties: getGeometryProperties(geometry) };
-            style = style.drawingStylefromContext(context);
+
+            var featStyle = feature.style;
+            if (featStyle instanceof Function) {
+                featStyle = feature.style(geometry.properties, feature.type);
+            }
+
+            // var styleConc = {
+            //     fill: {
+            //         ...featStyle.fill,
+            //         ...layer.style.fill,
+            //     },
+            //     stroke: {
+            //         ...featStyle.stroke,
+            //         ...layer.style.stroke,
+            //     },
+            //     point: {
+            //         ...featStyle.point,
+            //         ...layer.style.point,
+            //     },
+            //     icon: {
+            //         ...featStyle.icon,
+            //         ...layer.style.icon,
+            //     },
+            // };
+
+            // TO DO solve the problem with {...}
+            /* eslint-disable prefer-object-spread */
+            var styleConc = {
+                fill: Object.assign({},
+                    featStyle.fill,
+                    layer.style.fill),
+                stroke: Object.assign({},
+                    featStyle.stroke,
+                    layer.style.stroke),
+                point: Object.assign({},
+                    featStyle.point,
+                    layer.style.point),
+                icon: Object.assign({},
+                    featStyle.icon,
+                    layer.style.icon),
+            };
+            /* eslint-enable prefer-object-spread */
+
+            style = new itowns.Style(styleConc).drawingStylefromContext(context);
 
             if (feature.type === itowns.FEATURE_TYPES.POLYGON) {
                 symb = '&#9724';
@@ -97,9 +139,9 @@ var FeatureToolTip = (function _() {
                 stroke = '0px';
             } else if (feature.type === itowns.FEATURE_TYPES.POINT) {
                 symb = '&#9679';
-                if (style && style.point) {  // Style and style.point can be undefined if no style options were passed
-                    fill = style.point.color;
-                    stroke = '1.25px ' + style.point.line;
+                if (style.point || styleConc.icon) {  // Style and style.point can be undefined if no style options were passed
+                    fill = (style.point && style.point.color) || (styleConc.icon && styleConc.icon.color);
+                    stroke = '1.25px ' + ((style.point && style.point.line) || 'black');
                 }
             }
 
@@ -109,10 +151,10 @@ var FeatureToolTip = (function _() {
             content += '</span>';
 
             if (geometry.properties) {
-                content += (geometry.properties.description || geometry.properties.name || geometry.properties.nom || layer.name || '');
+                content += (geometry.properties.description || geometry.properties.name || geometry.properties.nom || geometry.properties.title || layer.name || '');
             }
 
-            if (feature.type === itowns.FEATURE_TYPES.POINT) {
+            if (feature.type === itowns.FEATURE_TYPES.POINT && options.writeLatLong) {
                 content += '<br/><span class="coord">long ' + feature.coordinates[0].toFixed(4) + '</span>';
                 content += '<br/><span class="coord">lat ' + feature.coordinates[1].toFixed(4) + '</span>';
             }
@@ -231,8 +273,9 @@ var FeatureToolTip = (function _() {
             }
 
             var opts = options || { filterAllProperties: true };
-            opts.filterProperties = opts.filterProperties == undefined ? [] : opts.filterProperties;
-            opts.filterProperties.concat(['name', 'nom', 'style', 'description']);
+            opts.filterProperties = opts.filterProperties === undefined ? [] : opts.filterProperties;
+            opts.writeLatLong = opts.writeLatLong || false;
+            // opts.filterProperties.concat(['name', 'nom', 'style', 'description']);
 
             layers.push({ layer: layer, options: opts });
             layersId.push(layer.id);

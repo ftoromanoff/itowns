@@ -427,9 +427,8 @@ class Style {
         if (this.point.color || context.globals.point) {
             mapPropertiesFromContext('point', this, style, context);
         }
-        if (Object.keys(style).length) {
-            return style;
-        }
+
+        return style;
     }
 
     /**
