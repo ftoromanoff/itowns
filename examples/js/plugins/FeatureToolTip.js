@@ -81,9 +81,42 @@ var FeatureToolTip = (function _() {
         for (var p = 0; p < features.length; p++) {
             feature = features[p];
             geometry = feature.geometry;
-            style = (geometry.properties && geometry.properties.style) || feature.style || layer.style;
             var context = { globals: {}, properties: getGeometryProperties(geometry) };
-            style = style.drawingStylefromContext(context);
+
+            // style = (geometry.properties && geometry.properties.style) || feature.style || layer.style;
+            // style = style.drawingStylefromContext(context);
+
+            // var styleConc = {
+            //     fill: {
+            //         ...geometry.properties.style && geometry.properties.style.fill ? geometry.properties.style.fill : {},
+            //         ...layer.style.fill,
+            //     },
+            //     stroke: {
+            //         ...geometry.properties.style && geometry.properties.style.stroke ? geometry.properties.style.stroke : {},
+            //         ...layer.style.stroke,
+            //     },
+            //     point: {
+            //         ...geometry.properties.style && geometry.properties.style.point ? geometry.properties.style.point : {},
+            //         ...layer.style.point,
+            //     },
+            // };
+
+            // TO DO solve the problem with {...}
+            /* eslint-disable prefer-object-spread */
+            var styleConc = {
+                fill: Object.assign({},
+                    geometry.properties.style && geometry.properties.style.fill ? geometry.properties.style.fill : {},
+                    layer.style.fill),
+                stroke: Object.assign({},
+                    geometry.properties.style && geometry.properties.style.stroke ? geometry.properties.style.stroke : {},
+                    layer.style.stroke),
+                point: Object.assign({},
+                    geometry.properties.style && geometry.properties.style.point ? geometry.properties.style.point : {},
+                    layer.style.point),
+            };
+            /* eslint-enable prefer-object-spread */
+
+            style = new itowns.Style(styleConc).drawingStylefromContext(context);
 
             if (feature.type === itowns.FEATURE_TYPES.POLYGON) {
                 symb = '&#9724';
