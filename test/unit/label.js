@@ -50,15 +50,15 @@ describe('Label', function () {
     };
 
     before('init style', function () {
-        style = new Style();
-        style.setFromVectorTileLayer({
+        const layerMocked = {
             type: 'symbol',
             paint: {},
             layout: {
                 'icon-image': 'icon',
                 'icon-size': 1,
             },
-        }, sprites);
+        };
+        style = new Style(Style.setFromVectorTileLayer(layerMocked, sprites));
     });
 
     it('should throw errors for bad Label construction', function () {
