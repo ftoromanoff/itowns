@@ -135,13 +135,16 @@ function readPBF(file, options) {
                     feature = collection.requestFeatureById(layer.id, vtFeature.type - 1);
                     feature.id = layer.id;
                     feature.order = layer.order;
-                    feature.style = options.in.styles[feature.id];
+                    // feature.style = options.in.styles[feature.id];
+                    vtFeature.properties.style = options.in.styles[feature.id];
                     vtFeatureToFeatureGeometry(vtFeature, feature);
                 } else if (!collection.features.find(f => f.id === layer.id)) {
                     feature = collection.newFeatureByReference(feature);
                     feature.id = layer.id;
                     feature.order = layer.order;
                     feature.style = options.in.styles[feature.id];
+                    feature.style.isExtraStyle = true;
+                    feature.hasExtraStyle = feature.id;
                 }
             }
         }
