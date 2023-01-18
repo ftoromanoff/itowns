@@ -6,16 +6,14 @@ import { FeatureCollection } from '../Core/Feature';
 
 const { Buffer } = require('buffer/');
 
-const pool = workerpool.pool('../../dist/worker.js');
-
-function typedarrayToBuffer(arr) {
-    return ArrayBuffer.isView(arr)
-    // To avoid a copy, use the typed array's underlying ArrayBuffer to back
-    // new Buffer, respecting the "view", i.e. byteOffset and byteLength
-        ? Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength)
-    // Pass through all other types to `Buffer.from`
-        : Buffer.from(arr);
-}
+// function typedarrayToBuffer(arr) {
+//     return ArrayBuffer.isView(arr)
+//     // To avoid a copy, use the typed array's underlying ArrayBuffer to back
+//     // new Buffer, respecting the "view", i.e. byteOffset and byteLength
+//         ? Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength)
+//     // Pass through all other types to `Buffer.from`
+//         : Buffer.from(arr);
+// }
 
 export default {
     /**
@@ -48,9 +46,9 @@ export default {
             };
             pool.exec('parse', [data, sia(_options)])
                 .then((result) => {
-                    const deSia2 = new DeSia({ constructors: itownsConstructors });
-                    const dataBuffed = typedarrayToBuffer(result);
-                    const resDeBuf = deSia2.deserialize(dataBuffed);
+                    const deSia = new DeSia({ constructors: itownsConstructors });
+
+                    const resDeBuf = deSia.deserialize(result);
 
                     const featureCollection = new FeatureCollection(options.out);
                     // featureCollection.style.copy(options.out.style);
