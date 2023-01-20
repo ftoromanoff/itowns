@@ -1,4 +1,5 @@
-import * as THREE from 'three';
+// import * as THREE from 'three';
+import { Vector3, Quaternion, Matrix3, Matrix4, Object3D, MathUtils } from 'three';
 import Extent from 'Core/Geographic/Extent';
 import Coordinates from 'Core/Geographic/Coordinates';
 import CRS from 'Core/Geographic/Crs';
@@ -322,8 +323,9 @@ const transformToLocalSystem3D = (coord, collection) => {
 };
 
 const transformToLocalSystem2D = (coord, collection) => coord.applyMatrix4(collection.matrixWorldInverse);
-const axisZ = new THREE.Vector3(0, 0, 1);
-const alignYtoEast = new THREE.Quaternion();
+// const axisZ = new THREE.Vector3(0, 0, 1);
+const axisZ = new Vector3(0, 0, 1);
+const alignYtoEast = new Quaternion();
 /**
  * An object regrouping a list of [features]{@link Feature} and the extent of this collection.
  * **Warning**, the data (`extent` or `Coordinates`) can be stored in a local system.
@@ -370,7 +372,7 @@ const alignYtoEast = new THREE.Quaternion();
  *
  */
 
-export class FeatureCollection extends THREE.Object3D {
+export class FeatureCollection extends Object3D {
     #transformToLocalSystem = transformToLocalSystem2D;
     #setLocalSystem = doNothing;
     /**
@@ -386,7 +388,7 @@ export class FeatureCollection extends THREE.Object3D {
         this.filterExtent = options.filterExtent;
         this.style = options.style;
         this.isInverted = false;
-        this.matrixWorldInverse = new THREE.Matrix4();
+        this.matrixWorldInverse = new Matrix4();
         this.center = new Coordinates('EPSG:4326', 0, 0);
 
         if (this.size == 2) {
@@ -410,7 +412,7 @@ export class FeatureCollection extends THREE.Object3D {
                     // align Z axe to geodesic normal.
                     this.quaternion.setFromUnitVectors(axisZ, center.geodesicNormal);
                     // align Y axe to East
-                    alignYtoEast.setFromAxisAngle(axisZ, THREE.MathUtils.degToRad(90 + this.center.longitude));
+                    alignYtoEast.setFromAxisAngle(axisZ, MathUtils.degToRad(90 + this.center.longitude));
                     this.quaternion.multiply(alignYtoEast);
                 }
 
@@ -418,7 +420,7 @@ export class FeatureCollection extends THREE.Object3D {
                 this.position.copy(center);
                 this.updateMatrixWorld();
                 this.normalMatrix.getNormalMatrix(this.matrix);
-                this.normalMatrixInverse = new THREE.Matrix3().copy(this.normalMatrix).invert();
+                this.normalMatrixInverse = new Matrix3().copy(this.normalMatrix).invert();
 
                 this.#setLocalSystem = doNothing;
             };
