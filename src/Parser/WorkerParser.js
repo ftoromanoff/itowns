@@ -3,7 +3,6 @@ import itownsConstructors from 'workers/constructors';
 // import GeoJsonParser from 'Parser/GeoJsonParser';
 import { sia, DeSia } from 'sializer';
 import { FeatureCollection } from '../Core/Feature';
-// import Style from '../Core/Style';
 
 const { Buffer } = require('buffer/');
 
