@@ -22,7 +22,7 @@
             // Define initial camera position
             var placement = {
                 coord: new itowns.Coordinates('EPSG:4326', 6.8, 45.9),
-                range: 50000,
+                // range: 500000,
             }
 
             // `viewerDiv` will contain iTowns' rendering area (`<canvas>`)
@@ -58,23 +58,21 @@
 
             // Fetch, Parse and Convert by iTowns
             var kmlSource = new itowns.FileSource({
-                url: 'https://raw.githubusercontent.com/iTowns/iTowns2-sample-data/master/croquis.kml',
+                url: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_month_depth.kml',
                 crs: 'EPSG:4326',
                 format: 'application/kml',
             });
 
             // var kmlStyle = new itowns.Style({
-            var kmlStyle =  {
+            var kmlStyle = {
                 zoom: { min: 10, max: 20 },
                 text: {
                     field: '{name}',
-                    haloColor: 'white',
+                    haloColor: 'black',
                     haloWidth: 1,
-                    transform: 'uppercase',
+                    color: function (properties){ return properties.style.icon.color; },
                 },
-                icon: {
-                    anchor: 'bottom',
-                },
+
             // });
             };
 
