@@ -46,6 +46,15 @@ function rgba2rgb(orig) {
     }
 }
 
+function hex2rgb(hex) {
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+    } : null;
+}
+
 export function readExpression(property, ctx) {
     if (property != undefined) {
         if (property.expression) {
@@ -81,7 +90,34 @@ function getImage(source, key) {
     const target = document.createElement('img');
 
     if (typeof source == 'string') {
-        target.src = source;
+        const color = key;
+        if (color) {
+            Fetcher.texture(source, { crossOrigin: 'anonymous' })
+                .then(texture => texture.image)
+                .then((img) => {
+                    canvas.width = img.naturalWidth;
+                    canvas.height = img.naturalHeight;
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    ctx.drawImage(img, 0, 0);
+                    const imgd = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
+
+                    const pix = imgd.data;
+
+                    const colorRGB = hex2rgb(color);
+                    for (var i = 0, n = pix.length; i < n; i += 4) {
+                        if (pix[i] + pix[i + 1] + pix[i + 2] === 255 * 3) {
+                            pix[i] = colorRGB.r;
+                            pix[i + 1] = colorRGB.g;
+                            pix[i + 2] = colorRGB.b;
+                            // pix[i+3] is the transparency.
+                        }
+                    }
+                    ctx.putImageData(imgd, 0, 0);
+                    target.src = canvas.toDataURL('image/png');
+                });
+        } else {
+            target.src = source;
+        }
     } else if (source && source[key]) {
         const sprite = source[key];
         canvas.width = sprite.width;
@@ -261,13 +297,18 @@ function defineStyleProperty(style, category, name, value, defaultValue) {
  * Default is `0`.
  *
  * @property {Object} icon - Defines the appearance of icons attached to label.
- * @property {String} icon.source - The url of the icons' image file.
- * @property {String} icon.key - The key of the icons' image in a vector tile data set.
+ * @property {string} icon.source - The url of the icons' image file.
+ * @property {string} icon.key - The key of the icons' image in a vector tile data set.
  * @property {string} [icon.anchor='center'] - The anchor of the icon compared to the label position.
  * Can be `left`, `bottom`, `right`, `center`, `top-left`, `top-right`, `bottom-left`
  * or `bottom-right`.
  * @property {number} icon.size - If the icon's image is passed with `icon.source` or
  * `icon.key`, it size when displayed on screen is multiplied by `icon.size`. Default is `1`.
+ * @property {string|function} icon.color - The color of the icon. Can be any [valid
+ * color string](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value).
+ * It will change the color of the white pixels of the icon source image.
+ * @property {number|function} icon.opacity - The opacity of the icon. Can be between
+ * `0.0` and `1.0`. Default is `1.0`.
  *
  * @example
  * const style = new itowns.Style({
@@ -371,6 +412,8 @@ class Style {
         defineStyleProperty(this, 'icon', 'key', params.icon.key);
         defineStyleProperty(this, 'icon', 'anchor', params.icon.anchor, 'center');
         defineStyleProperty(this, 'icon', 'size', params.icon.size, 1);
+        defineStyleProperty(this, 'icon', 'color', params.icon.color);
+        defineStyleProperty(this, 'icon', 'opacity', params.icon.opacity, 1.0);
     }
 
     /**
@@ -456,8 +499,14 @@ class Style {
             this.text.opacity = properties['label-opacity'];
             this.text.size = properties['label-size'];
 
-            if (properties.icon) {
-                this.icon.source = properties.icon;
+            const icon = {
+                ...(properties.icon !== undefined && { source: properties.icon }),
+                ...(properties['icon-scale'] !== undefined && { size: properties['icon-scale'] }),
+                ...(properties['icon-opacity'] !== undefined && { opacity: properties['icon-opacity'] }),
+                ...(properties['icon-color'] !== undefined && { color: properties['icon-color'] }),
+            };
+            if (Object.keys(icon).length) {
+                this.icon = icon;
             }
         } else {
             this.stroke.color = properties.stroke;
@@ -558,6 +607,9 @@ class Style {
             if (key) {
                 this.icon.key = key;
                 this.icon.size = readVectorProperty(layer.layout['icon-size']) || 1;
+                const { color, opacity } = rgba2rgb(readVectorProperty(layer.paint['icon-color'], { type: 'color' }));
+                this.icon.color = color;
+                this.icon.opacity = readVectorProperty(layer.paint['icon-opacity']) || (opacity !== undefined && opacity);
             }
         }
         return this;
@@ -599,16 +651,17 @@ class Style {
         const image = this.icon.source;
         const size = this.icon.size;
         const key = this.icon.key;
+        const color = this.icon.color;
 
-        let icon = cacheStyle.get(image || key, size);
+        let icon = cacheStyle.get(image || key, size, color);
 
         if (!icon) {
             if (key && sprites) {
                 icon = getImage(sprites, key);
             } else {
-                icon = getImage(image);
+                icon = getImage(image, color);
             }
-            cacheStyle.set(icon, image || key, size);
+            cacheStyle.set(icon, image || key, size, color);
         }
 
         const addIcon = () => {
@@ -618,6 +671,8 @@ class Style {
 
             cIcon.width = icon.width * this.icon.size;
             cIcon.height = icon.height * this.icon.size;
+            cIcon.style.color = this.icon.color;
+            cIcon.style.opacity = this.icon.opacity;
             cIcon.style.position = 'absolute';
             cIcon.style.top = '0';
             cIcon.style.left = '0';
