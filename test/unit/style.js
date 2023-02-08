@@ -1,4 +1,5 @@
 import Style, { cacheStyle } from 'Core/Style';
+import { FEATURE_TYPES } from 'Core/Feature';
 import assert from 'assert';
 import Fetcher from 'Provider/Fetcher';
 import { TextureLoader } from 'three';
@@ -105,6 +106,76 @@ describe('Style', function () {
                 assert.equal(dom.children[0].class, 'itowns-icon');
                 assert.equal(dom.children[0].style['z-index'], -1);
             });
+        });
+    });
+
+    describe('setFromGeojsonProperties', () => {
+        it('FEATURE_TYPES.POINT', () => {
+            const geoJsonProperties = {
+                radius: 2,
+                'label-color': '#eba55f',
+                'icon-color': '#eba55f',
+            };
+            const style = Style.setFromGeojsonProperties(geoJsonProperties, FEATURE_TYPES.POINT);
+            assert.equal(style.point.radius, 2);
+            assert.equal(style.text.color, '#eba55f');
+            assert.equal(style.icon.color, '#eba55f');
+        });
+        it('FEATURE_TYPES.POLYGONE', () => {
+            const geoJsonProperties = {
+                fill: '#eba55f',
+                stroke: '#eba55f',
+            };
+            const style = Style.setFromGeojsonProperties(geoJsonProperties, FEATURE_TYPES.POLYGONE);
+            assert.equal(style.stroke.color, '#eba55f');
+            assert.equal(style.fill.color, '#eba55f');
+        });
+    });
+
+    describe('setFromVectorTileLayer', () => {
+        it("layer.type==='fill'", () => {
+            const vectorTileLayer = {
+                type: 'fill',
+                paint: {
+                    'fill-pattern': 'filler',
+                    'fill-outline-color': '#eba55f',
+                },
+            };
+            const style = Style.setFromVectorTileLayer(vectorTileLayer, sprites);
+            // fill-pattern
+            assert.equal(style.fill.pattern.constructor.name, 'DOMElement');
+            // fill-outline-color
+            assert.equal(style.stroke.color, '#eba55f');
+        });
+        it("layer.type==='line'", () => {
+            const vectorTileLayer = {
+                type: 'line',
+                paint: {
+                    'line-color': '#eba55f',
+                },
+            };
+            const style = Style.setFromVectorTileLayer(vectorTileLayer);
+            assert.equal(style.stroke.color, '#eba55f');
+        });
+        it("layer.type==='circle'", () => {
+            const vectorTileLayer = {
+                type: 'circle',
+                paint: {
+                    'circle-color': '#eba55f',
+                },
+            };
+            const style = Style.setFromVectorTileLayer(vectorTileLayer);
+            assert.equal(style.point.color, '#eba55f');
+        });
+        it("layer.type==='symbol'", () => {
+            const vectorTileLayer = {
+                type: 'symbol',
+                layout: {
+                    'symbol-z-order': 'auto',
+                },
+            };
+            const style = Style.setFromVectorTileLayer(vectorTileLayer);
+            assert.equal(style.text.zOrder, 'Y');
         });
     });
 });
