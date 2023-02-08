@@ -234,7 +234,7 @@ function base_altitudeDefault(properties, coordinates = { z: 0 }) {
  * @property {Extent?} extent - The extent containing all the geometries
  * composing the feature.
  */
-class Feature {
+export class Feature {
     /**
      *
      * @param {string} type type of Feature. It can be 'point', 'line' or 'polygon'.
