@@ -11,7 +11,6 @@ function drawPolygon(ctx, vertices, indices = [{ offset: 0, count: 1 }], style =
     if (vertices.length === 0) {
         return;
     }
-
     if (style.length) {
         for (const s of style) {
             _drawPolygon(ctx, vertices, indices, s, size, extent, invCtxScale, canBeFilled);
@@ -95,13 +94,13 @@ function drawFeature(ctx, feature, extent, style, invCtxScale) {
 
     for (const geometry of feature.geometries) {
         if (Extent.intersectsExtent(geometry.extent, extent)) {
-            const context = { globals, properties: () => geometry.properties };
-            const contextStyle = (geometry.properties.style || style).drawingStylefromContext(context);
+            const context = { globals, specifics: { properties: () => geometry.properties, type: () => feature.type } };
+
+            const contextStyle = Style.merge(style, feature.style, context).drawingStylefromContext(context);
 
             if (contextStyle) {
                 if (
-                    feature.type === FEATURE_TYPES.POINT
-                    && contextStyle.point
+                    feature.type === FEATURE_TYPES.POINT && contextStyle.point
                 ) {
                     // cross multiplication to know in the extent system the real size of
                     // the point
@@ -155,6 +154,8 @@ export default {
                 ctx.fillStyle = backgroundColor.getStyle();
                 ctx.fillRect(0, 0, sizeTexture, sizeTexture);
             }
+
+            // Documentation needed !!
             ctx.globalCompositeOperation = style.globalCompositeOperation || 'source-over';
             ctx.imageSmoothingEnabled = false;
             ctx.lineJoin = 'round';
@@ -186,7 +187,7 @@ export default {
 
             // Draw the canvas
             for (const feature of collection.features) {
-                drawFeature(ctx, feature, featureExtent, feature.style || style, invCtxScale);
+                drawFeature(ctx, feature, featureExtent, style, invCtxScale);
             }
 
             texture = new THREE.CanvasTexture(c);

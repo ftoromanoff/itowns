@@ -37,7 +37,7 @@ export function readExpression(property, ctx) {
             }
             return property.stops[0][1];
         } else if (property instanceof Function) {
-            return property(ctx.properties());
+            return property(...Object.values(ctx.specifics).map(specific => specific()));
         } else {
             return property;
         }
@@ -629,6 +629,45 @@ class Style {
     }
 
     /**
+     * instanciate a Style based on 2 style_Interface, prioritazing for
+     * each properties the first style in the list
+     * @param {StyleOptions} styleHigh first object style with higher priority.
+     * @param {StyleOptions} styleLow object style with lower priority.
+     * @param {Object} context The feature context.
+     * @returns {Style} the merged Style instance.
+     */
+    static merge(styleHigh = {}, styleLow, context) {
+        let styleLowRead = styleLow;
+        if (styleLow instanceof Function) {
+            styleLowRead = readExpression(styleLow, context);
+        }
+        const styleConc = {
+            fill: {
+                ...styleLowRead.fill,
+                ...styleHigh.fill,
+            },
+            stroke: {
+                ...styleLowRead.stroke,
+                ...styleHigh.stroke,
+            },
+            point: {
+                ...styleLowRead.point,
+                ...styleHigh.point,
+            },
+            icon: {
+                ...styleLowRead.icon,
+                ...styleHigh.icon,
+            },
+            text: {
+                ...styleLowRead.text,
+                ...styleHigh.text,
+            },
+            order: styleHigh.order || styleLowRead.order,
+        };
+        return new Style(styleConc);
+    }
+
+    /**
      * set Style from (geojson-like) properties.
      * @param {object} properties (geojson-like) properties.
      * @param {number} type
@@ -956,7 +995,7 @@ class Style {
         if (this.text.field.expression) {
             return readExpression(this.text.field, ctx);
         } else {
-            return this.text.field.replace(/\{(.+?)\}/g, (a, b) => (ctx.properties()[b] || '')).trim();
+            return this.text.field.replace(/\{(.+?)\}/g, (a, b) => (ctx.specifics.properties()[b] || '')).trim();
         }
     }
 }
