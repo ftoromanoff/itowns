@@ -129,7 +129,7 @@ export class FeatureGeometry {
     }
 
     baseAltitude(feature, coordinates) {
-        const base_altitude = feature.style[typeToStyleProperty[feature.type]].base_altitude || 0;
+        const base_altitude = feature.base_altitude[typeToStyleProperty[feature.type]] || 0;
         return isNaN(base_altitude) ? base_altitude(this.properties, coordinates) : base_altitude;
     }
 
@@ -198,6 +198,10 @@ function push3DValues(value0, value1, value2 = 0) {
     this.vertices[this._pos++] = value2;
 }
 
+function base_altitudeDefault(properties, coordinates = { z: 0 }) {
+    return coordinates.z;
+}
+
 /**
  *
  * This class improves and simplifies the construction and conversion of geographic data structures.
@@ -259,7 +263,19 @@ class Feature {
         }
         this._pos = 0;
         this._pushValues = (this.size === 3 ? push3DValues : push2DValues).bind(this);
-        this.style = new Style({}, collection.style);
+        // this.style = new Style({}, collection.style);
+        this.style = {
+            fill: {},
+            stroke: {},
+            point: {},
+        };
+
+        this.style = Style.setFromGeojsonProperties;
+        this.base_altitude = {
+            fill: (collection.style && collection.style.fill && collection.style.fill.base_altitude) || base_altitudeDefault,
+            stroke: (collection.style && collection.style.stroke && collection.style.stroke.base_altitude) || base_altitudeDefault,
+            point: (collection.style && collection.style.point && collection.style.point.base_altitude) || base_altitudeDefault,
+        };
 
         this.altitude = {
             min: Infinity,

@@ -1,6 +1,5 @@
 import Coordinates from 'Core/Geographic/Coordinates';
 import { FeatureCollection, FEATURE_TYPES } from 'Core/Feature';
-import Style from 'Core/Style';
 import { deprecatedParsingOptionsToNewOne } from 'Core/Deprecated/Undeprecator';
 
 function readCRS(json) {
@@ -73,7 +72,7 @@ const toFeature = {
         }
 
         const geometry = feature.bindNewGeometry();
-        properties.style = Style.setFromGeojsonProperties(properties, feature.type);
+        // properties.style = Style.setFromGeojsonProperties(properties, feature.type);
         geometry.properties = properties;
         // geometry.properties.style = new Style({}, feature.style).setFromGeojsonProperties(properties, feature.type);
 
@@ -86,7 +85,7 @@ const toFeature = {
             return;
         }
         const geometry = feature.bindNewGeometry();
-        properties.style = Style.setFromGeojsonProperties(properties, feature.type);
+        // properties.style = Style.setFromGeojsonProperties(properties, feature.type);
         geometry.properties = properties;
         // geometry.properties.style = new Style({}, feature.style).setFromGeojsonProperties(properties, feature.type);
 
