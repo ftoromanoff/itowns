@@ -176,9 +176,9 @@ class FileSource extends Source {
                 }
             }
 
-            if (data.isFeatureCollection) {
-                data.setParentStyle(options.out.style);
-            }
+            // if (data.isFeatureCollection) {
+            //     data.setParentStyle(options.out.style);
+            // }
         });
     }
 

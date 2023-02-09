@@ -548,11 +548,11 @@ export class FeatureCollection extends THREE.Object3D {
         return ref;
     }
 
-    setParentStyle(style) {
-        if (style) {
-            this.features.forEach((f) => {
-                f.style.parent = style;
-            });
-        }
-    }
+    // setParentStyle(style) {
+    //     if (style) {
+    //         this.features.forEach((f) => {
+    //             f.style.parent = style;
+    //         });
+    //     }
+    // }
 }
