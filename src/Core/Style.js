@@ -192,6 +192,38 @@ export class StyleContext {
         return this.#feature.type;
     }
 
+    get style() {
+        const layerStyle = this.layerStyle || {};
+        let featureStyle = this.#feature.style;
+        if (featureStyle instanceof Function) {
+            featureStyle = readExpression(featureStyle, this);
+        }
+        const style = {
+            fill: {
+                ...featureStyle.fill,
+                ...layerStyle.fill,
+            },
+            stroke: {
+                ...featureStyle.stroke,
+                ...layerStyle.stroke,
+            },
+            point: {
+                ...featureStyle.point,
+                ...layerStyle.point,
+            },
+            icon: {
+                ...featureStyle.icon,
+                ...layerStyle.icon,
+            },
+            text: {
+                ...featureStyle.text,
+                ...layerStyle.text,
+            },
+            order: layerStyle.order || featureStyle.order,
+        };
+        return style;
+    }
+
     get localCoordinates() {
         return this.#localCoordinates;
     }
@@ -611,36 +643,6 @@ class Style {
     }
 
     /**
-     * Map drawing properties style (fill, stroke, point, text and icon) from context to object.
-     * Only the necessary properties are mapped to object.
-     * if a property is expression, the mapped value will be the expression result depending on context.
-     * @param      {StyleContext}  context  The context linked to the feature
-     *
-     * @return     {Style}  mapped style depending on context.
-     */
-    drawingStylefromContext(context) {
-        const style = {};
-        if (this.fill.color || this.fill.pattern || context.globals.fill) {
-            mapPropertiesFromContext('fill', this, style, context);
-        }
-        if (this.stroke.color || context.globals.stroke) {
-            mapPropertiesFromContext('stroke', this, style, context);
-        }
-        if (this.point.color || this.point.model || context.globals.point) {
-            mapPropertiesFromContext('point', this, style, context);
-        }
-
-        if (this.text || context.globals.text) {
-            mapPropertiesFromContext('text', this, style, context);
-        }
-        if (this.icon || context.globals.icon) {
-            mapPropertiesFromContext('icon', this, style, context);
-        }
-        style.order = this.order;
-        return new Style(style);
-    }
-
-    /**
      * Copies the content of the target style into this style.
      *
      * @param {Style} style - The style to copy.
@@ -657,13 +659,65 @@ class Style {
     }
 
     /**
-     * Clones this style.
-     *
-     * @return {Style} The new style, cloned from this one.
-     */
+         * Clones this style.
+         *
+         * @return {Style} The new style, cloned from this one.
+         */
     clone() {
         const clone = new Style();
         return clone.copy(this);
+    }
+
+    /**
+     * Map style properties (fill, stroke, point, text and icon) from context to object.
+     * Only the necessary properties are mapped to object.
+     * if a property is expression, the mapped value will be the expression result depending on context.
+     * @param   {StyleContext}  context  The context
+     *
+     * @return  {Style}  mapped style depending on context.
+     */
+    static getFromContext(context) {
+        const styleConc = new Style(context.style);
+        const style = {};
+        if (styleConc.fill.color || styleConc.fill.pattern || context.globals.fill) {
+            if (typeof styleConc.fill.pattern === 'string') {
+                styleConc.fill.pattern = { source: styleConc.fill.pattern };
+            }
+            mapPropertiesFromContext('fill', styleConc, style, context);
+        }
+        if (styleConc.stroke.color || context.globals.stroke) {
+            mapPropertiesFromContext('stroke', styleConc, style, context);
+        }
+        if (styleConc.point.color || styleConc.point.model || context.globals.point) {
+            mapPropertiesFromContext('point', styleConc, style, context);
+        }
+
+        if (styleConc.text || context.globals.text) {
+            mapPropertiesFromContext('text', styleConc, style, context);
+        }
+        if (styleConc.icon || context.globals.icon) {
+            mapPropertiesFromContext('icon', styleConc, style, context);
+        }
+        style.order = styleConc.order;
+        return new Style(style);
+    }
+
+    /**
+     * Returns a string, associating `style.text.field` and properties to use to
+     * replace the keys in `style.text.field`.
+     *
+     * @param {FeatureContext} context The context linked to the feature
+     *
+     * @return {string|undefined} The formatted string if `style.text.field` is defined, nothing otherwise.
+     */
+    getTextFromProperties(context) {
+        if (!this.text.field) { return; }
+
+        if (this.text.field.expression) {
+            return readExpression(this.text.field, context);
+        } else {
+            return this.text.field.replace(/\{(.+?)\}/g, (a, b) => (context.properties()[b] || '')).trim();
+        }
     }
 
     /**
@@ -923,24 +977,6 @@ class Style {
             }
         } else {
             return this.text.anchor;
-        }
-    }
-
-    /**
-     * Returns a string, associating `style.text.field` and properties to use to
-     * replace the keys in `style.text.field`.
-     *
-     * @param {Object} ctx - An object containing the feature context.
-     *
-     * @return {string|undefined} The formatted string if `style.text.field` is defined, nothing otherwise.
-     */
-    getTextFromProperties(ctx) {
-        if (!this.text.field) { return; }
-
-        if (this.text.field.expression) {
-            return readExpression(this.text.field, ctx);
-        } else {
-            return this.text.field.replace(/\{(.+?)\}/g, (a, b) => (ctx.properties()[b] || '')).trim();
         }
     }
 }

@@ -7,7 +7,7 @@ import Extent from 'Core/Geographic/Extent';
 import Crs from 'Core/Geographic/Crs';
 import OrientationUtils from 'Utils/OrientationUtils';
 import Coordinates from 'Core/Geographic/Coordinates';
-import { StyleContext } from 'Core/Style';
+import Style, { StyleContext } from 'Core/Style';
 
 const coord = new Coordinates('EPSG:4326', 0, 0, 0);
 const context = new StyleContext();
@@ -180,7 +180,10 @@ function featureToPoint(feature, options) {
     const vertices = new Float32Array(ptsIn);
     inverseScale.setFromMatrixScale(options.collection.matrixWorldInverse);
     normal.set(0, 0, 1).multiply(inverseScale);
+
+    const pointMaterialSize = [];
     context.globals = { point: true };
+    context.setFeature(feature);
 
     for (const geometry of feature.geometries) {
         const start = geometry.indices[0].offset;
@@ -195,8 +198,11 @@ function featureToPoint(feature, options) {
             }
 
             coord.copy(context.setLocalCoordinatesFromArray(feature.vertices, v));
-            const style = feature.style.drawingStylefromContext(context);
-            const { base_altitude, color } = style.point;
+            const style = Style.getFromContext(context);
+            const { base_altitude, color, radius } = style.point;
+            if (!pointMaterialSize.includes(radius)) {
+                pointMaterialSize.push(radius);
+            }
             coord.z = 0;
 
             // populate vertices
@@ -212,7 +218,11 @@ function featureToPoint(feature, options) {
     geom.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
     geom.setAttribute('batchId', new THREE.BufferAttribute(batchIds, 1));
 
-    options.pointMaterial.size = feature.style.point.radius;
+    options.pointMaterial.size = pointMaterialSize[0];
+    if (pointMaterialSize.length > 1) {
+        // TODO CREATE material for each feature
+        console.warn('Too many differents point.radius, only the first one will be used');
+    }
 
     return new THREE.Points(geom, options.pointMaterial);
 }
@@ -231,9 +241,9 @@ function featureToLine(feature, options) {
     const geom = new THREE.BufferGeometry();
     geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
-    // TODO CREATE material for each feature
-    options.lineMaterial.linewidth = feature.style.stroke.width;
+    const lineMaterialWidth = [];
     context.globals = { stroke: true };
+    context.setFeature(feature);
 
     const countIndices = (count - feature.geometries.length) * 2;
     const indices = getIntArrayFromSize(countIndices, count);
@@ -270,17 +280,24 @@ function featureToLine(feature, options) {
             }
 
             coord.copy(context.setLocalCoordinatesFromArray(feature.vertices, v));
-            const style = feature.style.drawingStylefromContext(context);
-            const { base_altitude, color } = style.stroke;
+            const style = Style.getFromContext(context);
+            const { base_altitude, color, width } = style.stroke;
             coord.z = 0;
+            if (!lineMaterialWidth.includes(width)) {
+                lineMaterialWidth.push(width);
+            }
 
             // populate geometry buffers
             base.copy(normal).multiplyScalar(base_altitude).add(coord).toArray(vertices, v);
             toColor(color).multiplyScalar(255).toArray(colors, v);
             batchIds[j] = id;
         }
-
         featureId++;
+    }
+    options.lineMaterial.linewidth = lineMaterialWidth[0];
+    if (lineMaterialWidth.length > 1) {
+        // TODO CREATE material for each feature
+        console.warn('Too many differents stroke.width, only the first one will be used');
     }
     geom.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
     geom.setAttribute('batchId', new THREE.BufferAttribute(batchIds, 1));
@@ -297,6 +314,7 @@ function featureToPolygon(feature, options) {
     const batchId = options.batchId || ((p, id) => id);
     context.setCollection(options.collection);
     context.globals = { fill: true };
+    context.setFeature(feature);
 
     inverseScale.setFromMatrixScale(options.collection.matrixWorldInverse);
     normal.set(0, 0, 1).multiply(inverseScale);
@@ -324,7 +342,7 @@ function featureToPolygon(feature, options) {
             }
 
             coord.copy(context.setLocalCoordinatesFromArray(feature.vertices, i));
-            const style = feature.style.drawingStylefromContext(context);
+            const style = Style.getFromContext(context);
             const { base_altitude, color } = style.fill;
             coord.z = 0;
 
@@ -386,6 +404,7 @@ function featureToExtrudedPolygon(feature, options) {
     let featureId = 0;
 
     context.globals = { fill: true };
+    context.setFeature(feature);
     inverseScale.setFromMatrixScale(options.collection.matrixWorldInverse);
     normal.set(0, 0, 1).multiply(inverseScale);
     coord.setCrs(options.collection.crs);
@@ -411,7 +430,7 @@ function featureToExtrudedPolygon(feature, options) {
 
             coord.copy(context.setLocalCoordinatesFromArray(ptsIn, i));
 
-            const style = feature.style.drawingStylefromContext(context);
+            const style = Style.getFromContext(context);
             const { base_altitude, extrusion_height, color } = style.fill;
             coord.z = 0;
 
@@ -624,11 +643,11 @@ export default {
                 options.polygonMaterial = ReferLayerProperties(new THREE.MeshBasicMaterial(), this);
                 options.layer = this;
             }
+            context.layerStyle = options.layer.style;
 
             options.collection = collection;
 
             const features = collection.features;
-
             if (!features || features.length == 0) { return; }
 
             options.GlobalZTrans = collection.center.z;

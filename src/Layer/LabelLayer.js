@@ -6,7 +6,7 @@ import Coordinates from 'Core/Geographic/Coordinates';
 import Extent from 'Core/Geographic/Extent';
 import Label from 'Core/Label';
 import { FEATURE_TYPES } from 'Core/Feature';
-import { readExpression, StyleContext } from 'Core/Style';
+import Style, { readExpression, StyleContext } from 'Core/Style';
 import { ScreenGrid } from 'Renderer/Label2DRenderer';
 
 const context = new StyleContext();
@@ -180,6 +180,7 @@ class LabelLayer extends GeometryLayer {
         delete config.domElement;
         super(id, config.object3d || new THREE.Group(), config);
 
+        this.style = config.style || {};
         this.isLabelLayer = true;
         this.domElement = new DomNode();
         this.domElement.show();
@@ -248,13 +249,15 @@ class LabelLayer extends GeometryLayer {
             text: true,
             zoom: extent.zoom,
         };
+        context.layerStyle = this.style;
         data.features.forEach((f) => {
             // TODO: add support for LINE and POLYGON
             if (f.type !== FEATURE_TYPES.POINT) {
                 return;
             }
+            context.setFeature(f);
 
-            const featureField = f.style.text.field;
+            const featureField = f.style?.text?.field;
 
             // determine if altitude style is specified by the user
             const altitudeStyle = f.style.point.base_altitude;
@@ -271,8 +274,7 @@ class LabelLayer extends GeometryLayer {
                 coord.applyMatrix4(data.matrixWorld);
 
                 if (!_extent.isPointInside(coord)) { return; }
-
-                const geometryField = g.properties.style && g.properties.style.text.field;
+                const geometryField = g.properties.style && g.properties.style.text && g.properties.style.text.field;
 
                 context.setGeometry(g);
                 let content;
@@ -281,21 +283,22 @@ class LabelLayer extends GeometryLayer {
                 } else if (!geometryField && !featureField && !layerField) {
                     // Check if there is an icon, with no text
                     if (!(g.properties.style && (g.properties.style.icon.source || g.properties.style.icon.key))
-                        && !(f.style && (f.style.icon.source || f.style.icon.key))
-                        && !(this.style && (this.style.icon.source || this.style.icon.key))) {
+                        && !(f.style && f.style.icon && (f.style.icon.source || f.style.icon.key))
+                        && !(this.style && this.style.icon && (this.style.icon.source || this.style.icon.key))) {
                         return;
                     }
                 } else if (geometryField) {
-                    content = g.properties.style.getTextFromProperties(context);
+                    content = new Style(g.properties.style).getTextFromProperties(context);
                 } else if (featureField) {
-                    content = f.style.getTextFromProperties(context);
+                    content = new Style(f.style).getTextFromProperties(context);
                 } else if (layerField) {
-                    content = this.style.getTextFromProperties(context);
+                    content = new Style(this.style).getTextFromProperties(context);
                 }
 
-                const style = (g.properties.style || f.style || this.style).drawingStylefromContext(context);
+                const style = Style.getFromContext(context);
 
                 const label = new Label(content, coord.clone(), style, this.source.sprites);
+
                 label.layerId = this.id;
                 label.padding = this.margin || label.padding;
 

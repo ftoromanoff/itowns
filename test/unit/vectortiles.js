@@ -5,6 +5,7 @@ import VectorTileParser from 'Parser/VectorTileParser';
 import VectorTilesSource from 'Source/VectorTilesSource';
 import Extent from 'Core/Geographic/Extent';
 import urlParser from 'Parser/MapBoxUrlParser';
+import Style from 'Core/Style';
 
 describe('Vector tiles', function () {
     // this PBF file comes from https://github.com/mapbox/vector-tile-js
@@ -50,21 +51,21 @@ describe('Vector tiles', function () {
             assert.equal(square2[1], square2[4 * size + 1]);
 
             done();
-        });
+        }).catch(done);
     });
 
     it('returns nothing', (done) => {
         parse(null).then((collection) => {
             assert.equal(collection, undefined);
             done();
-        });
+        }).catch(done);
     });
 
     it('filters all features out', (done) => {
         parse(multipolygon, {}).then((collection) => {
             assert.equal(collection.features.length, 0);
             done();
-        });
+        }).catch(done);
     });
 
     describe('VectorTilesSource', function () {
@@ -86,7 +87,7 @@ describe('Vector tiles', function () {
                 // eslint-disable-next-line no-template-curly-in-string
                 assert.equal(source.url, 'http://server.geo/${z}/${x}/${y}.pbf');
                 done();
-            });
+            }).catch(done);
         });
 
         it('reads the background layer', (done) => {
@@ -100,7 +101,7 @@ describe('Vector tiles', function () {
             source.whenReady.then(() => {
                 assert.ok(source.backgroundLayer);
                 done();
-            });
+            }).catch(done);
         });
 
         it('creates styles and assigns filters', (done) => {
@@ -121,7 +122,7 @@ describe('Vector tiles', function () {
                 assert.ok(source.styles.land);
                 assert.equal(source.styles.land.fill.color, 'rgb(255,0,0)');
                 done();
-            });
+            }).catch(done);
         });
 
         it('get style from context', (done) => {
@@ -139,15 +140,16 @@ describe('Vector tiles', function () {
                     }],
                 },
             });
-            source.whenReady.then(() => {
-                const styleLand_zoom_3 = source.styles.land.drawingStylefromContext({ globals: { zoom: 3 }, properties: () => {} });
-                const styleLand_zoom_5 = source.styles.land.drawingStylefromContext({ globals: { zoom: 5 }, properties: () => {} });
-                assert.equal(styleLand_zoom_3.fill.color, 'rgb(255,0,0)');
-                assert.equal(styleLand_zoom_3.fill.opacity, 1);
-                assert.equal(styleLand_zoom_5.fill.color, 'rgb(255,0,0)');
-                assert.equal(styleLand_zoom_5.fill.opacity, 0.5);
-                done();
-            });
+            source.whenReady
+                .then(() => {
+                    const styleLand_zoom_3 = Style.getFromContext({ globals: { zoom: 3 }, properties: () => {}, style: source.styles.land });
+                    const styleLand_zoom_5 = Style.getFromContext({ globals: { zoom: 5 }, properties: () => {}, style: source.styles.land });
+                    assert.equal(styleLand_zoom_3.fill.color, 'rgb(255,0,0)');
+                    assert.equal(styleLand_zoom_3.fill.opacity, 1);
+                    assert.equal(styleLand_zoom_5.fill.color, 'rgb(255,0,0)');
+                    assert.equal(styleLand_zoom_5.fill.opacity, 0.5);
+                    done();
+                }).catch(done);
         });
 
         it('loads the style from a file', (done) => {
@@ -161,7 +163,7 @@ describe('Vector tiles', function () {
                 assert.equal(source.styles.land.zoom.min, 5);
                 assert.equal(source.styles.land.zoom.max, 13);
                 done();
-            });
+            }).catch(done);
         });
 
         it('sets the correct Style#zoom.min', (done) => {
@@ -221,7 +223,7 @@ describe('Vector tiles', function () {
                 assert.equal(source.styles.fourth.zoom.min, 0);
                 assert.equal(source.styles.fifth.zoom.min, 3);
                 done();
-            });
+            }).catch(done);
         });
 
         it('Vector tile source mapbox url', () => {
