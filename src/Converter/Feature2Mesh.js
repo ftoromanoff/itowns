@@ -7,6 +7,7 @@ import Extent from 'Core/Geographic/Extent';
 import Crs from 'Core/Geographic/Crs';
 import OrientationUtils from 'Utils/OrientationUtils';
 import Coordinates from 'Core/Geographic/Coordinates';
+import Style from '../Core/Style';
 
 const coord = new Coordinates('EPSG:4326', 0, 0, 0);
 const dim_ref = new THREE.Vector2();
@@ -228,10 +229,13 @@ function featureToPoint(feature, options) {
     } else {
         vertices = new Float32Array(ptsIn);
     }
+
+    const pointMaterialSize = [];
     const globals = { point: true };
     for (const geometry of feature.geometries) {
-        const context = { globals, properties: () => geometry.properties };
-        const style = feature.style.drawingStylefromContext(context);
+        const context = { globals, specifics: { properties: () => geometry.properties, type: () => feature.type } };
+
+        const style = Style.merge(options.layer?.style, feature.style, context).drawingStylefromContext(context);
 
         const start = geometry.indices[0].offset;
         const count = geometry.indices[0].count;
@@ -242,6 +246,10 @@ function featureToPoint(feature, options) {
             fillBatchIdArray(id, batchIds, start, start + count);
             featureId++;
         }
+        const size = style.point.radius;
+        if (!pointMaterialSize.includes(size)) {
+            pointMaterialSize.push(size);
+        }
     }
 
     const geom = new THREE.BufferGeometry();
@@ -249,7 +257,11 @@ function featureToPoint(feature, options) {
     geom.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
     if (batchIds) { geom.setAttribute('batchId', new THREE.BufferAttribute(batchIds, 1)); }
 
-    options.pointMaterial.size = feature.style.point.radius;
+    options.pointMaterial.size = pointMaterialSize[0];
+    if (pointMaterialSize.length > 1) {
+        // TODO CREATE material for each feature
+        console.warn('Too many differents point.radius, only the first one will be used');
+    }
 
     return new THREE.Points(geom, options.pointMaterial);
 }
@@ -275,18 +287,17 @@ function featureToLine(feature, options) {
     geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
     let lines;
-
-    // TODO CREATE material for each feature
-    options.lineMaterial.linewidth = feature.style.stroke.width;
+    const lineMaterialWidth = [];
     const globals = { stroke: true };
     if (feature.geometries.length > 1) {
+        // Multi line case
         const countIndices = (count - feature.geometries.length) * 2;
         const indices = getIntArrayFromSize(countIndices, count);
         let i = 0;
-        // Multi line case
         for (const geometry of feature.geometries) {
-            const context = { globals, properties: () => geometry.properties };
-            const style = feature.style.drawingStylefromContext(context);
+            const context = { globals, specifics: { properties: () => geometry.properties, type: () => feature.type } };
+
+            const style = Style.merge(options.layer?.style, feature.style, context).drawingStylefromContext(context);
 
             const start = geometry.indices[0].offset;
             // To avoid integer overflow with indice value (16 bits)
@@ -310,14 +321,25 @@ function featureToLine(feature, options) {
                 fillBatchIdArray(id, batchIds, start, end);
                 featureId++;
             }
+            const width = style.stroke.width;
+            if (!lineMaterialWidth.includes(width)) {
+                lineMaterialWidth.push(width);
+            }
         }
         geom.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
         if (batchIds) { geom.setAttribute('batchId', new THREE.BufferAttribute(batchIds, 1)); }
         geom.setIndex(new THREE.BufferAttribute(indices, 1));
+
+        options.lineMaterial.linewidth = lineMaterialWidth[0];
+        if (lineMaterialWidth.length > 1) {
+            // TODO CREATE material for each feature
+            console.warn('Too many differents stroke.width, only the first one will be used');
+        }
         lines = new THREE.LineSegments(geom, options.lineMaterial);
     } else {
-        const context = { globals, properties: () => feature.geometries[0].properties };
-        const style = feature.style.drawingStylefromContext(context);
+        const context = { globals, specifics: { properties: () => feature.geometries[0].properties, type: () => feature.type } };
+
+        const style = Style.merge(options.layer?.style, feature.style, context).drawingStylefromContext(context);
 
         fillColorArray(colors, count, toColor(style.stroke.color));
         geom.setAttribute('color', new THREE.BufferAttribute(colors, 3, true));
@@ -326,6 +348,8 @@ function featureToLine(feature, options) {
             fillBatchIdArray(id, batchIds, 0, count);
             geom.setAttribute('batchId', new THREE.BufferAttribute(batchIds, 1));
         }
+
+        options.lineMaterial.linewidth = style.stroke.width;
         lines = new THREE.Line(geom, options.lineMaterial);
     }
     return lines;
@@ -358,8 +382,9 @@ function featureToPolygon(feature, options) {
             console.warn('Feature to Polygon: integer overflow, too many points in polygons');
             break;
         }
-        const context = { globals, properties: () => geometry.properties };
-        const style = feature.style.drawingStylefromContext(context);
+        const context = { globals, specifics: { properties: () => geometry.properties, type: () => feature.type } };
+
+        const style = Style.merge(options.layer?.style, feature.style, context).drawingStylefromContext(context);
 
         const lastIndice = geometry.indices.slice(-1)[0];
         const end = lastIndice.offset + lastIndice.count;
@@ -424,8 +449,9 @@ function featureToExtrudedPolygon(feature, options) {
     const globals = { fill: true };
 
     for (const geometry of feature.geometries) {
-        const context = { globals, properties: () => geometry.properties };
-        const style = feature.style.drawingStylefromContext(context);
+        const context = { globals, specifics: { properties: () => geometry.properties, type: () => feature.type } };
+
+        const style = Style.merge(options.layer.style, feature.style, context).drawingStylefromContext(context);
 
         // topColor is assigned to the top of extruded polygon
         const topColor = toColor(style.fill.color);
@@ -657,6 +683,7 @@ export default {
             if (!features || features.length == 0) { return; }
 
             options.GlobalZTrans = collection.center.z;
+            options.collection = { style: collection.style };
 
             const meshes = features.map(feature => featureToMesh(feature, options));
             const featureNode = new FeatureMesh(meshes, collection);
