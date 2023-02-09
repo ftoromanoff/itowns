@@ -11,9 +11,9 @@ const inv255 = 1 / 255;
 const canvas = (typeof document !== 'undefined') ? document.createElement('canvas') : {};
 const style_properties = {};
 
-function base_altitudeDefault(properties, coordinates = { z: 0 }) {
-    return coordinates.z;
-}
+// function base_altitudeDefault(properties, coordinates = { z: 0 }) {
+//     return coordinates.z;
+// }
 
 function mapPropertiesFromContext(mainKey, from, to, context) {
     to[mainKey] = to[mainKey] || {};
@@ -363,7 +363,8 @@ class Style {
         defineStyleProperty(this, 'fill', 'color', params.fill.color);
         defineStyleProperty(this, 'fill', 'opacity', params.fill.opacity, 1.0);
         defineStyleProperty(this, 'fill', 'pattern', params.fill.pattern);
-        defineStyleProperty(this, 'fill', 'base_altitude', params.fill.base_altitude, base_altitudeDefault);
+        // defineStyleProperty(this, 'fill', 'base_altitude', params.fill.base_altitude, base_altitudeDefault);
+        defineStyleProperty(this, 'fill', 'base_altitude', params.fill.base_altitude);
         defineStyleProperty(this, 'fill', 'extrusion_height', params.fill.extrusion_height);
 
         if (typeof this.fill.pattern == 'string') {
@@ -377,7 +378,8 @@ class Style {
         defineStyleProperty(this, 'stroke', 'opacity', params.stroke.opacity, 1.0);
         defineStyleProperty(this, 'stroke', 'width', params.stroke.width, 1.0);
         defineStyleProperty(this, 'stroke', 'dasharray', params.stroke.dasharray, []);
-        defineStyleProperty(this, 'stroke', 'base_altitude', params.stroke.base_altitude, base_altitudeDefault);
+        // defineStyleProperty(this, 'stroke', 'base_altitude', params.stroke.base_altitude, base_altitudeDefault);
+        defineStyleProperty(this, 'stroke', 'base_altitude', params.stroke.base_altitude);
 
         this.point = {};
         defineStyleProperty(this, 'point', 'color', params.point.color);
@@ -385,7 +387,8 @@ class Style {
         defineStyleProperty(this, 'point', 'opacity', params.point.opacity, 1.0);
         defineStyleProperty(this, 'point', 'radius', params.point.radius, 2.0);
         defineStyleProperty(this, 'point', 'width', params.point.width, 0.0);
-        defineStyleProperty(this, 'point', 'base_altitude', params.point.base_altitude, base_altitudeDefault);
+        // defineStyleProperty(this, 'point', 'base_altitude', params.point.base_altitude, base_altitudeDefault);
+        defineStyleProperty(this, 'point', 'base_altitude', params.point.base_altitude);
 
         this.text = {};
         defineStyleProperty(this, 'text', 'field', params.text.field);
