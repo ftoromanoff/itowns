@@ -4,6 +4,20 @@ import itownsConstructors from 'workers/constructors';
 import { sia, DeSia } from 'sializer';
 import { FeatureCollection } from '../Core/Feature';
 
+const supportedParsers = new Map([
+    ['geojson', 'geojson'],
+    ['application/json', 'geojson'],
+    ['application/geo+json', 'geojson'],
+    ['application/kml', 'kml'],
+    ['application/vnd.google-earth.kml+xml', 'kml'],
+    // ['text/plain', KMLParser.parse],
+    // ['application/gpx', GpxParser.parse],
+    // ['application/x-protobuf;type=mapbox-vector', VectorTileParser.parse],
+    // ['application/gtx', GTXParser.parse],
+    // ['application/isg', ISGParser.parse],
+    // ['application/gdf', GDFParser.parse],
+]);
+
 const { Buffer } = require('buffer/');
 
 // function typedarrayToBuffer(arr) {
@@ -25,6 +39,7 @@ export default {
      * @return {Promise} A promise resolving with a [FeatureCollection]{@link FeatureCollection}.
      */
     parse(data, options = {}) {
+        const format = options.in.format;
         return new Promise((resolve) => {
             const _options = {
                 in: {
@@ -44,7 +59,8 @@ export default {
                     forcedExtentCrs: options.out.forcedExtentCrs,
                 },
             };
-            pool.exec('parse', [data, sia(_options)])
+            const parser = supportedParsers.get(format);
+            pool.exec(parser, [data, sia(_options)])
                 .then((result) => {
                     const deSia = new DeSia({ constructors: itownsConstructors });
 
