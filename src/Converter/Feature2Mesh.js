@@ -712,7 +712,6 @@ export default {
             if (!features || features.length == 0) { return; }
 
             options.GlobalZTrans = collection.center.z;
-            options.collection = { style: collection.style };
 
             const meshes = features.map(feature => featureToMesh(feature, options));
             const featureNode = new FeatureMesh(meshes, collection);
