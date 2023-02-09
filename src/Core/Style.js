@@ -629,6 +629,45 @@ class Style {
     }
 
     /**
+     * instanciate a Style based on 2 style_Interface, prioritazing for
+     * each properties the first style in the list
+     * @param {StyleOptions} styleHigh first object style with higher priority.
+     * @param {StyleOptions} styleLow object style with lower priority.
+     * @param {Object} context The feature context.
+     * @returns {Style} the merged Style instance.
+     */
+    static merge(styleHigh = {}, styleLow, context) {
+        let styleLowRead = styleLow;
+        if (styleLow instanceof Function) {
+            styleLowRead = readExpression(styleLow, context);
+        }
+        const styleConc = {
+            fill: {
+                ...styleLowRead.fill,
+                ...styleHigh.fill,
+            },
+            stroke: {
+                ...styleLowRead.stroke,
+                ...styleHigh.stroke,
+            },
+            point: {
+                ...styleLowRead.point,
+                ...styleHigh.point,
+            },
+            icon: {
+                ...styleLowRead.icon,
+                ...styleHigh.icon,
+            },
+            text: {
+                ...styleLowRead.text,
+                ...styleHigh.text,
+            },
+            order: styleHigh.order || styleLowRead.order,
+        };
+        return new Style(styleConc);
+    }
+
+    /**
      * set Style from (geojson-like) properties.
      * @param {object} properties (geojson-like) properties.
      * @param {number} type
