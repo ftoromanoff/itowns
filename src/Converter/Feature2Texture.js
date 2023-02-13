@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FEATURE_TYPES } from 'Core/Feature';
 import Extent from 'Core/Geographic/Extent';
 import Coordinates from 'Core/Geographic/Coordinates';
+import Style from '../Core/Style';
 
 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 const matrix = svg.createSVGMatrix();
@@ -110,7 +111,23 @@ function drawFeature(ctx, feature, extent, style, invCtxScale) {
     for (const geometry of feature.geometries) {
         if (Extent.intersectsExtent(geometry.extent, extent)) {
             const context = { globals, properties: () => geometry.properties };
-            const contextStyle = (geometry.properties.style || style).drawingStylefromContext(context);
+            // const contextStyle = (geometry.properties.style || style).drawingStylefromContext(context);
+            const styleConc = {
+                fill: {
+                    ...geometry.properties.style && geometry.properties.style.fill ? geometry.properties.style.fill : {},
+                    ...style.fill,
+                },
+                stroke: {
+                    ...geometry.properties.style && geometry.properties.style.stroke ? geometry.properties.style.stroke : {},
+                    ...style.stroke,
+                },
+                point: {
+                    ...geometry.properties.style && geometry.properties.style.point ? geometry.properties.style.point : {},
+                    ...style.point,
+                },
+            };
+
+            const contextStyle = new Style(styleConc).drawingStylefromContext(context);
 
             if (contextStyle) {
                 if (
@@ -151,7 +168,7 @@ const featureExtent = new Extent('EPSG:4326', 0, 0, 0, 0);
 export default {
     // backgroundColor is a THREE.Color to specify a color to fill the texture
     // with, given there is no feature passed in parameter
-    createTextureFromFeature(collection, extent, sizeTexture, style, backgroundColor) {
+    createTextureFromFeature(collection, extent, sizeTexture, style = {}, backgroundColor) {
         let texture;
 
         if (collection) {
@@ -169,6 +186,8 @@ export default {
                 ctx.fillStyle = backgroundColor.getStyle();
                 ctx.fillRect(0, 0, sizeTexture, sizeTexture);
             }
+
+            // Documentation needed !!
             ctx.globalCompositeOperation = style.globalCompositeOperation || 'source-over';
             ctx.imageSmoothingEnabled = false;
             ctx.lineJoin = 'round';
@@ -200,7 +219,8 @@ export default {
 
             // Draw the canvas
             for (const feature of collection.features) {
-                drawFeature(ctx, feature, featureExtent, feature.style || style, invCtxScale);
+                // drawFeature(ctx, feature, featureExtent, feature.style || style, invCtxScale);
+                drawFeature(ctx, feature, featureExtent, style, invCtxScale);
             }
 
             texture = new THREE.CanvasTexture(c);
