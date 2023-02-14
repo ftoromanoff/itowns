@@ -72,8 +72,9 @@
             // Declare the source for the data on Ariege area
             const earthquakeSource = new itowns.FileSource({
                 url: './Earthquakes_3857.geojson',
-                crs: 'EPSG:3857',
-                format: 'application/json',
+                // crs: 'EPSG:3857',
+                // format: 'application/json',
+                // parser: itowns.WorkerParser.parse,
             });
 
             // Create a ColorLayer with the earthquake information
