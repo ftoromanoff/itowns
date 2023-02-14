@@ -63,8 +63,9 @@
             // Declare the source for the data on Ariege area
             const ariegeSource = new itowns.FileSource({
                 url: 'https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements/09-ariege/departement-09-ariege.geojson',
-                crs: 'EPSG:4326',
+                // crs: 'EPSG:4326',
                 format: 'application/json',
+                // parser: itowns.GeoJsonParser.parse,
             });
             // Create a ColorLayer for the Ariege area
             const ariegeLayer = new itowns.ColorLayer('ariege', {
