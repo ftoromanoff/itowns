@@ -50,8 +50,7 @@ describe('Label', function () {
     };
 
     before('init style', function () {
-        style = new Style();
-        style.setFromVectorTileLayer({
+        style = Style.setFromVectorTileLayer({
             type: 'symbol',
             paint: {},
             layout: {
