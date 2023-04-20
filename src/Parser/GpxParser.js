@@ -1,4 +1,5 @@
 import { gpx } from '@tmcw/togeojson';
+import { DOMParser } from 'xmldom';
 import GeoJsonParser from 'Parser/GeoJsonParser';
 import { deprecatedParsingOptionsToNewOne } from 'Core/Deprecated/Undeprecator';
 
