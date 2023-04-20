@@ -185,6 +185,7 @@ class FileSource extends Source {
             ['application/kml', fetcherXml],
             ['application/vnd.google-earth.kml+xml', fetcherXml],
             ['application/gpx', fetcherXml],
+            ['application/xml', fetcherXml],
             // ['application/x-protobuf;type=mapbox-vector', Fetcher.arrayBuffer],
             // ['application/gtx', Fetcher.arrayBuffer],
             // ['application/isg', Fetcher.text],
@@ -200,8 +201,22 @@ class FileSource extends Source {
             this.whenReady = fetch(this.urlFromExtent(), this.networkOptions)
                 .then((response) => {
                     checkResponse(response);
-                    this.format = this.format ? this.format : response.headers.get('content-type').split(';')[0];
-                    // console.log(this.format);
+                    if (!this.format) {
+                        let format = response.headers.get('content-type').split(';')[0];
+                        if (format === 'text/plain') {
+                            const ext = this.urlFromExtent().match(/.+\/{2}.+\/{1}.+(\.\w+)\?*.*/)[1];
+                            switch (ext) {
+                                case '.geojson':
+                                case '.json':
+                                    format = 'application/json';
+                                    break;
+                                case '.xml':
+                                default:
+                                    format = 'application/xml';
+                            }
+                        }
+                        this.format = format;
+                    }
                     if (!this.parser) { this.parser = supportedParsers.get(this.format); }
                     this.isVectorSource = true;
                     return supportedFetchers.get(this.format)(response);
