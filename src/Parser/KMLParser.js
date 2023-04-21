@@ -14,7 +14,7 @@ export default {
      * Parse a KML file content and return a [FeatureCollection]{@link
      * module:GeoJsonParser~FeatureCollection}.
      *
-     * @param {XMLDocument} kmlFile - The KML file content to parse.
+     * @param {text} kmlFile - The KML file to parse.
      * @param {ParsingOptions} options - Options controlling the parsing.
      *
      * @return {Promise} A promise resolving with a [FeatureCollection]{@link
@@ -22,6 +22,7 @@ export default {
      */
     parse(kmlFile, options) {
         options = deprecatedParsingOptionsToNewOne(options);
-        return GeoJsonParser.parse(kml(kmlFile), options);
+        const xmlDom = new window.DOMParser().parseFromString(kmlFile, 'text/xml');
+        return GeoJsonParser.parse(kml(xmlDom), options);
     },
 };
