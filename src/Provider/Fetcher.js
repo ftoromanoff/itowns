@@ -84,7 +84,7 @@ export default {
             checkResponse(response);
             // console.log('json:', response.headers.get('content-type').split(';'));
             return response.text();
-        }).then(text => new window.DOMParser().parseFromString(text, 'text/xml'));
+        });// .then(text => new window.DOMParser().parseFromString(text, 'text/xml'));
     },
 
     /**
