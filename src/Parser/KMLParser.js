@@ -22,7 +22,7 @@ export default {
      * @return {Promise} A promise resolving with a [FeatureCollection]{@link
      * module:GeoJsonParser~FeatureCollection}.
      */
-    parse(kmlFile, options, DOMParser = window.DOMParser) {
+    parse(kmlFile, options) {
         options = deprecatedParsingOptionsToNewOne(options);
         const xmlDom = new DOMParser().parseFromString(kmlFile, 'text/xml');
         return GeoJsonParser.parse(kml(xmlDom), options);
