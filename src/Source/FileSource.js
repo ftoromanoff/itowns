@@ -1,6 +1,7 @@
 import Source, { supportedParsers } from 'Source/Source';
 import Cache from 'Core/Scheduler/Cache';
 import CRS from 'Core/Geographic/Crs';
+import Fetcher from 'Provider/Fetcher';
 
 function checkResponse(response) {
     if (!response.ok) {
@@ -172,6 +173,9 @@ class FileSource extends Source {
         function fetcherJson(res) {
             return res.json();
         }
+        function fetcherArrayBuffer(res) {
+            return res.arrayBuffer();
+        }
 
         const supportedFetchers = new Map([
             // ['image/x-bil;bits=32', Fetcher.textureFloat],
@@ -187,7 +191,7 @@ class FileSource extends Source {
             ['application/gpx', fetcherXml],
             ['application/xml', fetcherXml],
             // ['application/x-protobuf;type=mapbox-vector', Fetcher.arrayBuffer],
-            // ['application/gtx', Fetcher.arrayBuffer],
+            ['application/gtx', fetcherArrayBuffer],
             // ['application/isg', Fetcher.text],
             // ['application/gdf', Fetcher.text],
         ]);
