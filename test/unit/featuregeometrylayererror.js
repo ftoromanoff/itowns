@@ -72,7 +72,8 @@ files.forEach((geojson, i) => {
                         .then(() => {
                             assert.equal(layerProj4.object3d.children.length, 1);
                             done();
-                        }, done);
+                        })
+                        .catch(done);
                 }, done);
         });
 
@@ -85,7 +86,8 @@ files.forEach((geojson, i) => {
                         .then(() => {
                             assert.equal(layerNoProj4.object3d.children.length, 1);
                             done();
-                        }, done);
+                        })
+                        .catch(done);
                 }, done);
         });
 
@@ -118,7 +120,8 @@ files.forEach((geojson, i) => {
 
                     assert.ok(error < max_error);
                     done();
-                }, done);
+                })
+                .catch(done);
         });
     });
 });
