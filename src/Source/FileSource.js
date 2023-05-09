@@ -1,6 +1,37 @@
-import Source from 'Source/Source';
+import Source, { supportedParsers } from 'Source/Source';
 import Cache from 'Core/Scheduler/Cache';
 import CRS from 'Core/Geographic/Crs';
+import Fetcher from 'Provider/Fetcher';
+
+function checkResponse(response) {
+    if (!response.ok) {
+        var error = new Error(`Error loading ${response.url}: status ${response.status}`);
+        error.response = response;
+        throw error;
+    }
+}
+
+// TO move to CRS probably
+function readCRS(json) {
+    if (json.crs) {
+        if (json.crs.type.toLowerCase() == 'epsg') {
+            return `EPSG:${json.crs.properties.code}`;
+        } else if (json.crs.type.toLowerCase() == 'name') {
+            if (json.crs.properties.name.toLowerCase().includes('epsg:')) {
+                // OGC CRS URN: urn:ogc:def:crs:authority:version:code => EPSG:[...]:code
+                // legacy identifier: authority:code => EPSG:code
+                const codeStart = json.crs.properties.name.lastIndexOf(':');
+                if (codeStart > 0) {
+                    return `EPSG:${json.crs.properties.name.substr(codeStart + 1)}`;
+                }
+            }
+            throw new Error(`Unsupported CRS authority '${json.crs.properties.name}'`);
+        }
+        throw new Error(`Unsupported CRS type '${json.crs}'`);
+    }
+    // assume default crs
+    return 'EPSG:4326';
+}
 
 /**
  * @classdesc
@@ -117,13 +148,13 @@ class FileSource extends Source {
             console.warn('FileSource projection parameter is deprecated, use crs instead.');
             source.crs = source.crs || source.projection;
         }
-        if (!source.crs) {
-            if (source.features && source.features.crs) {
-                source.crs = source.features.crs;
-            } else {
-                throw new Error('source.crs is required in FileSource');
-            }
-        }
+        // if (!source.crs) {
+        //     if (source.features && source.features.crs) {
+        //         source.crs = source.features.crs;
+        //     } else {
+        //         throw new Error('source.crs is required in FileSource');
+        //     }
+        // }
 
         if (!source.url && !source.fetchedData && !source.features) {
             throw new Error(`url, fetchedData and features are not set in
@@ -135,12 +166,76 @@ class FileSource extends Source {
         super(source);
 
         this.isFileSource = true;
+        function fetcherXml(res) {
+            return res.text();
+            //  .then(text => new window.DOMParser().parseFromString(text, 'text/xml'));
+        }
+        function fetcherJson(res) {
+            return res.json();
+        }
+        function fetcherArrayBuffer(res) {
+            return res.arrayBuffer();
+        }
+
+        const supportedFetchers = new Map([
+            // ['image/x-bil;bits=32', Fetcher.textureFloat],
+            // ['geojson', Fetcher.json],
+            ['application/json', fetcherJson],
+            ['application/geo+json', fetcherJson],
+            // ['text/plain', function text(res) {
+            //     return res.text()
+            //         .then(text => new window.DOMParser().parseFromString(text, 'text/xml'));
+            // }],
+            ['application/kml', fetcherXml],
+            ['application/vnd.google-earth.kml+xml', fetcherXml],
+            ['application/gpx', fetcherXml],
+            ['application/xml', fetcherXml],
+            // ['application/x-protobuf;type=mapbox-vector', Fetcher.arrayBuffer],
+            ['application/gtx', fetcherArrayBuffer],
+            // ['application/isg', Fetcher.text],
+            // ['application/gdf', Fetcher.text],
+        ]);
 
         this.fetchedData = source.fetchedData;
         if (!this.fetchedData && !source.features) {
-            this.whenReady = this.fetcher(this.urlFromExtent(), this.networkOptions).then((f) => {
-                this.fetchedData = f;
-            });
+            // this.whenReady = this.fetcher(this.urlFromExtent(), this.networkOptions)
+            //     .then((f) => {
+            //         this.fetchedData = f;
+            //     });
+            this.whenReady = fetch(this.urlFromExtent(), this.networkOptions)
+                .then((response) => {
+                    checkResponse(response);
+                    if (!this.format) {
+                        let format = response.headers.get('content-type').split(';')[0];
+                        if (format === 'text/plain') {
+                            const ext = this.urlFromExtent().match(/.+\/{2}.+\/{1}.+(\.\w+)\?*.*/)[1];
+                            switch (ext) {
+                                case '.geojson':
+                                case '.json':
+                                    format = 'application/json';
+                                    break;
+                                case '.xml':
+                                default:
+                                    format = 'application/xml';
+                            }
+                        }
+                        this.format = format;
+                    }
+                    if (!this.parser) { this.parser = supportedParsers.get(this.format); }
+                    this.isVectorSource = true;
+                    return supportedFetchers.get(this.format)(response);
+                })
+                .then((f) => {
+                    // console.log(f);
+                    if (!source.crs) {
+                        console.log('source:', source);
+                        // source.crs =  (f.crs && readCRS(f)) || 'EPSG:4326';
+                        source.crs =  readCRS(f);
+                        this.crs = source.crs;
+                        console.log('crs not in source ->', source.crs);
+                    }
+                    this.fetchedData = f;
+                });
         } else if (source.features) {
             this._featuresCaches[source.features.crs] = new Cache();
             this._featuresCaches[source.features.crs].setByArray(Promise.resolve(source.features), [0]);

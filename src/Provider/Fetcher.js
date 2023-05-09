@@ -64,6 +64,7 @@ export default {
     json(url, options = {}) {
         return fetch(url, options).then((response) => {
             checkResponse(response);
+            // console.log('json:', response.headers.get('content-type').split(';'));
             return response.json();
         });
     },
@@ -81,8 +82,9 @@ export default {
     xml(url, options = {}) {
         return fetch(url, options).then((response) => {
             checkResponse(response);
+            // console.log('json:', response.headers.get('content-type').split(';'));
             return response.text();
-        }).then(text => new window.DOMParser().parseFromString(text, 'text/xml'));
+        });// .then(text => new window.DOMParser().parseFromString(text, 'text/xml'));
     },
 
     /**

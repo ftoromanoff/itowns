@@ -14,7 +14,7 @@ export default {
      * Parse a GPX file content and return a [FeatureCollection]{@link
      * module:GeoJsonParser~FeatureCollection}.
      *
-     * @param {XMLDocument} gpxFile - The GPX file content to parse.
+     * @param {text} gpxFile - The GPX file to parse.
      * @param {ParsingOptions} options - Options controlling the parsing.
      *
      * @return {Promise} A promise resolving with a [FeatureCollection]{@link
@@ -22,6 +22,7 @@ export default {
      */
     parse(gpxFile, options) {
         options = deprecatedParsingOptionsToNewOne(options);
-        return GeoJsonParser.parse(gpx(gpxFile), options);
+        const xmlDom = new window.DOMParser().parseFromString(gpxFile, 'text/xml');
+        return GeoJsonParser.parse(gpx(xmlDom), options);
     },
 };
