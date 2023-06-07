@@ -241,7 +241,11 @@ class LabelLayer extends GeometryLayer {
         // Converting the extent now is faster for further operation
         extent.as(data.crs, _extent);
         coord.crs = data.crs;
-        const globals = { zoom: extent.zoom };
+        const globals = {
+            icon: true,
+            text: true,
+            zoom: extent.zoom,
+        };
 
         data.features.forEach((f) => {
             // TODO: add support for LINE and POLYGON
@@ -289,7 +293,7 @@ class LabelLayer extends GeometryLayer {
 
                 const style = Style.merge(this.style, f.style, context).drawingStylefromContext(context);
 
-                const label = new Label(content, coord.clone(), new Style(style), this.source.sprites);
+                const label = new Label(content, coord.clone(), style, this.source.sprites);
 
                 label.layerId = this.id;
                 label.padding = this.margin || label.padding;
