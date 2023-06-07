@@ -479,7 +479,7 @@ class Style {
     constructor(params = {}) {
         this.isStyle = true;
 
-        this.order = 0;
+        this.order = params.order || 0;
 
         params.zoom = params.zoom || {};
         params.fill = params.fill || {};
@@ -543,7 +543,7 @@ class Style {
     }
 
     /**
-     * Map drawing properties style (fill, stroke and point) from context to object.
+     * Map drawing properties style (fill, stroke, point, text and icon) from context to object.
      * Only the necessary properties are mapped to object.
      * if a property is expression, the mapped value will be the expression result depending on context.
      * @param      {Object}  context  The context
@@ -563,28 +563,15 @@ class Style {
         if (this.point.color || this.point.model || context.globals.point) {
             mapPropertiesFromContext('point', this, style, context);
         }
-        if (Object.keys(style).length) {
-            return style;
-        }
-    }
 
-    /**
-     * Map symbol properties style (symbol and icon) from context to object.
-     * Only the necessary properties are mapped to object.
-     * if a property is expression, the mapped value will be the expression result depending on context.
-     * @param      {Object}  context  The context
-     * @return     {Object}  mapped style depending on context.
-     */
-    symbolStylefromContext(context) {
-        const style = {};
-        if (this.text) {
+        if (this.text || context.globals.text) {
             mapPropertiesFromContext('text', this, style, context);
         }
-        if (this.icon) {
+        if (this.icon || context.globals.icon) {
             mapPropertiesFromContext('icon', this, style, context);
         }
         style.order = this.order;
-        return style;
+        return new Style(style);
     }
 
     /**
