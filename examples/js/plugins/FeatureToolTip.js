@@ -64,10 +64,7 @@ const FeatureToolTip = (function _() {
         }
     }
 
-    function getGeometryProperties(geometry) {
-        return function properties() { return geometry.properties; };
-    }
-
+    const context = new itowns.StyleContext();
     function fillToolTip(features, layer, options) {
         let content = '';
         let feature;
@@ -78,12 +75,22 @@ const FeatureToolTip = (function _() {
         let symb = '';
         let prop;
 
+        context.globals = {
+            fill: true,
+            stroke: true,
+            point: true,
+            icon: true,
+        };
+        context.layerStyle = layer.style;
+
         for (let p = 0; p < features.length; p++) {
             feature = features[p];
             geometry = feature.geometry;
-            style = (geometry.properties && geometry.properties.style) || feature.style || layer.style;
-            const context = { globals: {}, properties: getGeometryProperties(geometry) };
-            style = style.applyContext(context);
+
+            context.setFeature(feature);
+            context.setGeometry(geometry);
+
+            style = itowns.Style.applyContext(context);
 
             if (feature.type === itowns.FEATURE_TYPES.POLYGON) {
                 symb = '&#9724';
@@ -97,9 +104,9 @@ const FeatureToolTip = (function _() {
                 stroke = '0px';
             } else if (feature.type === itowns.FEATURE_TYPES.POINT) {
                 symb = '&#9679';
-                if (style && style.point) {  // Style and style.point can be undefined if no style options were passed
-                    fill = style.point.color;
-                    stroke = '1.25px ' + style.point.line;
+                if (style.point || style.icon) {  // Style and style.point can be undefined if no style options were passed
+                    fill = (style.point && style.point.color) || (style.icon && style.icon.color);
+                    stroke = '1.25px ' + ((style.point && style.point.line) || 'black');
                 }
             }
 
@@ -109,10 +116,10 @@ const FeatureToolTip = (function _() {
             content += '</span>';
 
             if (geometry.properties) {
-                content += (geometry.properties.description || geometry.properties.name || geometry.properties.nom || layer.name || '');
+                content += (geometry.properties.description || geometry.properties.name || geometry.properties.nom || geometry.properties.title || layer.name || '');
             }
 
-            if (feature.type === itowns.FEATURE_TYPES.POINT) {
+            if (feature.type === itowns.FEATURE_TYPES.POINT && options.writeLatLong) {
                 content += '<br/><span class="coord">long ' + feature.coordinates[0].toFixed(4) + '</span>';
                 content += '<br/><span class="coord">lat ' + feature.coordinates[1].toFixed(4) + '</span>';
             }
@@ -231,8 +238,8 @@ const FeatureToolTip = (function _() {
             }
 
             const opts = options || { filterAllProperties: true };
-            opts.filterProperties = opts.filterProperties == undefined ? [] : opts.filterProperties;
-            opts.filterProperties.concat(['name', 'nom', 'style', 'description']);
+            opts.filterProperties = opts.filterProperties === undefined ? [] : opts.filterProperties;
+            opts.writeLatLong = opts.writeLatLong || false;
 
             layers.push({ layer: layer, options: opts });
             layersId.push(layer.id);
