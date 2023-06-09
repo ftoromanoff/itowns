@@ -1,7 +1,6 @@
-/* global page, itowns, view, TimeoutError, initialPosition */
+/* global page, itowns, view, initialPosition */
 // eslint-disable-next-line import/no-extraneous-dependencies
 const puppeteer = require('puppeteer');
-// const { TimeoutError } = require('puppeteer/Errors');
 const net = require('net');
 const fs = require('fs');
 const http = require('http');
@@ -116,7 +115,7 @@ const loadExample = async (url, screenshotName) => {
 
     pageErrors.forEach((e) => { throw e; });
 
-    await page.waitForFunction(() => typeof (view) === 'object');
+    await page.waitForFunction(() => typeof view === 'object' && view instanceof itowns.View);
 
     await page.evaluate(() => {
         itowns.CameraUtils.defaultStopPlaceOnGroundAtEnd = true;
@@ -125,11 +124,13 @@ const loadExample = async (url, screenshotName) => {
     try {
         await layersAreInitialized();
     } catch (e) {
-        if (e instanceof TimeoutError) {
+        if (e instanceof Error && e.name === 'TimeoutError') {
             await page.evaluate(() => {
                 itowns.CameraUtils.stop(view, view.camera.camera3D);
             });
             await layersAreInitialized();
+        } else {
+            throw e;
         }
     }
 
@@ -202,7 +203,7 @@ exports.mochaHooks = {
         });
 
         // the page all tests will be tested in
-        return browser.newPage().then((p) => { global.page = p; });
+        global.page = await browser.newPage();
     },
     // store initial position for restoration after the test
     afterAll(done) {
