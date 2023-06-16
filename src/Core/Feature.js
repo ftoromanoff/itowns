@@ -135,14 +135,13 @@ export class FeatureGeometry {
 
     /**
      * Push new coordinates in vertices buffer.
-     * @param {Coordinates} coordIn The coordinates to push.
      * @param {Feature} feature - the feature containing the geometry
+     * @param {Coordinates} coordIn The coordinates to push.
      */
-    pushCoordinates(coordIn, feature) {
+    pushCoordinates(feature, coordIn) {
         coordIn.z = this.baseAltitude(feature, coordIn);
 
         coordIn.as(feature.crs, coordOut);
-
         feature.transformToLocalSystem(coordOut);
 
         _setGeometryValues(this, feature, coordOut.x, coordOut.y, coordOut.z, coordOut.geodesicNormal);
@@ -154,23 +153,25 @@ export class FeatureGeometry {
     }
 
     /**
-     * Push new values coordinates in vertices buffer.
+     * Push new values coordinates in vertices buffer without any transformation.
      * No geographical conversion is made or the normal doesn't stored.
-     * No local transformation is made on coordinates.
      *
      * @param {Feature} feature - the feature containing the geometry
-     * @param {number} long The longitude coordinate.
-     * @param {number} lat The latitude coordinate.
-     * @param {THREE.Vector3} [normal] the normal on coordinates (only for `EPSG:4978` projection).
-     */
-    pushCoordinatesValues(feature, long, lat, normal) {
-        const altitude = this.baseAltitude(feature);
+     * @param {Object} coordIn An object containing the coordinates values to push.
+     * @param {number} coordIn.x the x coordinate (in a local systeme).
+     * @param {number} coordIn.y the y coordinate (in a local systeme).
+     * @param {THREE.Vector3} [coordIn.normal] the normal on coordinates (only for `EPSG:4978` projection).
+     * @param {Coordinates} [coordProj] An optional argument containing the geodesic coordinates in EPSG:4326
+     * It allows the user to get access to the feature coordinates to set style.base_altitude.
+    */
+    pushCoordinatesValues(feature, coordIn, coordProj) {
+        const altitude = this.baseAltitude(feature, coordProj);
 
-        _setGeometryValues(this, feature, long, lat, altitude, normal);
+        _setGeometryValues(this, feature, coordIn.x, coordIn.y, altitude, coordIn.normal);
 
         // expand extent if present
         if (this.#currentExtent) {
-            this.#currentExtent.expandByValuesCoordinates(long, lat);
+            this.#currentExtent.expandByValuesCoordinates(coordIn.x, coordIn.y);
         }
     }
 
