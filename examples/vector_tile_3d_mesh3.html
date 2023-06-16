@@ -1,0 +1,228 @@
+<html>
+    <head>
+        <title>Itowns - Globe + vector-tiles 3d</title>
+
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link rel="stylesheet" type="text/css" href="css/example.css">
+        <link rel="stylesheet" type="text/css" href="css/LoadingScreen.css">
+        <link rel="stylesheet" type="text/css" href="css/widgets.css">
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
+    </head>
+    <body>
+        <div id="viewerDiv"></div>
+
+        <!-- Import iTowns source code -->
+        <script src="../dist/itowns.js"></script>
+        <script src="../dist/debug.js"></script>
+        <!-- Import iTowns LoadingScreen and GuiTools plugins -->
+        <script src="js/GUI/GuiTools.js"></script>
+        <script src="js/GUI/LoadingScreen.js"></script>
+        <div id="description">
+            <p><b>Building Information</b></p>
+            <ul id="info">
+            </ul>
+        </div>
+        <script type="text/javascript">
+
+            // ---------- CREATE A GlobeView FOR SUPPORTING DATA VISUALIZATION : ----------
+
+            // Define camera initial position
+            const placement = {
+                coord: new itowns.Coordinates('EPSG:4326', 5.223762, 46.192268),
+                range: 5000,
+                tilt: 45,
+            };
+
+            // `viewerDiv` will contain iTowns' rendering area (`<canvas>`)
+            const viewerDiv = document.getElementById('viewerDiv');
+
+            // Create a GlobeView
+            const view = new itowns.GlobeView(viewerDiv, placement);
+
+            // Define poles texture
+            view.tileLayer.noTextureColor = new itowns.THREE.Color(0x95c1e1);
+
+            // Disable atmosphere lighting
+            view.getLayerById('atmosphere').visible = false;
+            view.getLayerById('atmosphere').fog.enable = false;
+
+            // Setup loading screen and debug menu
+            setupLoadingScreen(viewerDiv, view);
+            const debugMenu = new GuiTools('menuDiv', view, 300);
+
+
+
+            // ---------- DISPLAY CONTEXTUAL DATA : ----------
+
+            // Add two elevation layers, each with a different level of detail. Each layer's properties are defined in
+            // a json file.
+            function addElevationLayerFromConfig(config) {
+                config.source = new itowns.WMTSSource(config.source);
+                view.addLayer(
+                    new itowns.ElevationLayer(config.id, config),
+                )
+                .then(debugMenu.addLayerGUI.bind(debugMenu));
+            }
+            // itowns.Fetcher.json('./layers/JSONLayers/IGN_MNT_HIGHRES.json').then(addElevationLayerFromConfig);
+            // itowns.Fetcher.json('./layers/JSONLayers/WORLD_DTM.json').then(addElevationLayerFromConfig);
+
+            
+            // ---------- DISPLAY ORTHO-IMAGES : ----------
+
+            const ortho = itowns.Fetcher.json('./layers/JSONLayers/Ortho.json')
+                .then(function _(config) {
+                    config.source = new itowns.WMTSSource(config.source);
+                    var layer = new itowns.ColorLayer('Ortho', config);
+                    return view.addLayer(layer);
+                });
+            
+            // ---------- DISPLAY VECTOR TILED MAP DATA AS A ColorLayer : ----------
+
+            // // // Define the source of the ColorLayer data : a vector tiled map from the geoportail.
+            // const waterSource = new itowns.VectorTilesSource({
+            //     style: 'http://localhost:8081/testMvt.json',
+            //     accessToken: 'pk.eyJ1Ijoidmhhd2siLCJhIjoiY2xmbWpqOXBoMGNmZDN2cjJwZXk0MXBzZiJ9.192VNPJG0VV9dGOCOX1gUw',
+            //     filter: (layer) => {
+            //         return layer.id === 'water';
+            //     },
+            // });
+
+            // // // // Create a ColorLayer to support map data.
+            // const mapLayer = new itowns.ColorLayer('MVT', {
+            //     source: waterSource,
+            //     // effect_type: itowns.colorLayerEffects.removeLightColor,
+            //     // effect_parameter: 2.5,
+            //     // addLabelLayer: { performance: true },
+            //     // style: new itowns.Style({
+            //     //     text: {
+            //     //         color: '#000000',
+            //     //         haloColor: '#ffffff',
+            //     //         haloWidth: 3,
+            //     //         haloBlur: 2,
+            //     //     }
+            //     // })
+            // });
+
+            // // // Add the ColorLayer to the scene and to the debug menu.
+            // view.addLayer(mapLayer)
+            //     .then(debugMenu.addLayerGUI.bind(debugMenu));
+
+            // ---------- DISPLAY VECTOR TILED BUILDING DATA AS 3D MESHES : ----------
+
+            // Define the source of the building data : those are vector tiled data from the geoportail.
+            const buildingsSource = new itowns.VectorTilesSource({
+                style: 'http://localhost:8081/testMvt.json',
+                accessToken: 'pk.eyJ1Ijoidmhhd2siLCJhIjoiY2xmbWpqOXBoMGNmZDN2cjJwZXk0MXBzZiJ9.192VNPJG0VV9dGOCOX1gUw',
+                filter: (layer) => {
+                    return layer.id === 'building';
+                },
+            });
+
+            // Get buildings ground elevation
+            function altitudeBuildings(properties, coord) {
+                if (coord) {
+                    return itowns.DEMUtils.getElevationValueAt(view.tileLayer, coord);
+                }
+            }
+
+            // Create a FeatureGeometryLayer to support building data.
+            var buildingsLayer = new itowns.FeatureGeometryLayer('VTBuilding',{
+                batchId: function (property, featureId) { return featureId; },
+                source: buildingsSource,
+                zoom: {
+                    min: 15,
+                    // max: 13,
+                },
+                style: new itowns.Style({
+                    fill: {
+                        base_altitude: (p, c) => {
+                            return (altitudeBuildings(p, c) || 0) + p.min_height;
+                        },
+                        extrusion_height: (p) => {
+                            return p.height || 500;
+                        },
+                    },
+                })
+            });
+
+            // Add the FeatureGeometryLayer to the scene and to the debug menu.
+            view.addLayer(buildingsLayer)
+            .then((layer) => {
+                const gui = debug.GeometryDebug.createGeometryDebugUI(debugMenu.gui, view, layer);
+                debug.GeometryDebug.addWireFrameCheckbox(gui, view, layer);
+            })
+
+            // ---------- DEBUG TOOLS : ----------
+
+            debug.createTileDebugUI(debugMenu.gui, view);
+
+            view.addEventListener(itowns.GLOBE_VIEW_EVENTS.GLOBE_INITIALIZED, function () {
+                ortho.then(function () {
+                    itowns.ColorLayersOrdering.moveLayerToIndex(view, 'Ortho', 0);
+                }).catch(console.error);
+            });
+
+            // const coord = new itowns.Coordinates(view.referenceCrs);
+            // viewerDiv.addEventListener('mousedown', function (ev) {
+            //     coord.setFromVector3(
+            //         view.getPickingPositionFromDepth(view.eventToViewCoords(ev))
+            //     );
+            //     console.log(itowns.DEMUtils.getElevationValueAt(view.tileLayer, coord));
+            // })
+
+            // function picking(event) {
+            //     if(view.controls.isPaused) {
+            //         var htmlInfo = document.getElementById('info');
+            //         var intersects = view.pickObjectsAt(event, 3, 'VTBuilding');
+            //         var properties;
+            //         var info;
+            //         var batchId;
+
+            //         htmlInfo.innerHTML = ' ';
+
+            //         if (intersects.length) {
+            //             batchId = intersects[0].object.geometry.attributes.batchId.array[intersects[0].face.a];
+            //             properties = intersects[0].object.feature.geometries[batchId].properties;
+
+            //             Object.keys(properties).map(function (objectKey) {
+            //                 var value = properties[objectKey];
+            //                 if (value) {
+            //                     var key = objectKey.toString();
+            //                     if (key[0] !== '_' && key !== 'geometry_name') {
+            //                         info = value.toString();
+            //                         htmlInfo.innerHTML +='<li><b>' + key + ': </b>' + info + '</li>';
+            //                     }
+            //                 }
+            //             });
+            //         }
+            //     }
+            // }
+
+            // for (var layer of view.getLayers()) {
+            //     // if (layer.id === 'WFS Bus lines') {
+            //     //     layer.whenReady.then( function _(layer) {
+            //     //         var gui = debug.GeometryDebug.createGeometryDebugUI(debugMenu.gui, view, layer);
+            //     //         debug.GeometryDebug.addMaterialLineWidth(gui, view, layer, 1, 10);
+            //     //     });
+            //     // }
+            //     if (layer.id === 'VT Building') {
+            //         layer.whenReady.then( function _(layer) {
+            //             var gui = debug.GeometryDebug.createGeometryDebugUI(debugMenu.gui, view, layer);
+            //             debug.GeometryDebug.addWireFrameCheckbox(gui, view, layer);
+            //             window.addEventListener('mousemove', picking, false);
+            //         });
+            //     }
+            //     // if (layer.id === 'WFS Route points') {
+            //     //     layer.whenReady.then( function _(layer) {
+            //     //         var gui = debug.GeometryDebug.createGeometryDebugUI(debugMenu.gui, view, layer);
+            //     //         debug.GeometryDebug.addMaterialSize(gui, view, layer, 1, 200);
+            //     //     });
+            //     // }
+            // }
+
+        </script>
+    </body>
+</html>
