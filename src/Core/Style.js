@@ -505,12 +505,6 @@ class Style {
         defineStyleProperty(this, 'fill', 'base_altitude', params.fill.base_altitude, base_altitudeDefault);
         defineStyleProperty(this, 'fill', 'extrusion_height', params.fill.extrusion_height);
 
-        if (typeof this.fill.pattern == 'string') {
-            Fetcher.texture(this.fill.pattern).then((pattern) => {
-                this.fill.pattern = pattern.image;
-            });
-        }
-
         this.stroke = {};
         defineStyleProperty(this, 'stroke', 'color', params.stroke.color);
         defineStyleProperty(this, 'stroke', 'opacity', params.stroke.opacity, 1.0);
@@ -756,6 +750,35 @@ class Style {
     }
 
     /**
+     * Applies the style.fill to polygon domElement
+     * @param {CanvasRenderingContext2D} canevasCtx The Context 2D of the polygon domElement
+     * @param {DOMMatrix} scaledMatrix The DOM matrix scaled to generate pattenr (if any)
+     */
+    async fillPolygon(canevasCtx, scaledMatrix) {
+        if (this.fill.pattern) {
+            if (typeof this.fill.pattern === 'string') {
+                let fillPatternImg = cacheStyle.get(this.fill.pattern);
+                if (!fillPatternImg) {
+                    fillPatternImg = (await Fetcher.texture(this.fill.pattern)).image;
+                    cacheStyle.set(fillPatternImg, this.fill.pattern);
+                }
+                canevasCtx.fillStyle = canevasCtx.createPattern(fillPatternImg, 'repeat');
+                if (canevasCtx.fillStyle.setTransform) {
+                    canevasCtx.fillStyle.setTransform(scaledMatrix);
+                } else {
+                    console.warn('Raster pattern isn\'t completely supported on Ie and edge');
+                }
+            }
+        } else if (canevasCtx.fillStyle !== this.fill.color) {
+            canevasCtx.fillStyle = this.fill.color;
+        }
+        if (this.fill.opacity !== canevasCtx.globalAlpha) {
+            canevasCtx.globalAlpha = this.fill.opacity;
+        }
+        canevasCtx.fill();
+    }
+
+    /**
      * Applies this style to a DOM element. Limited to the `text` and `icon`
      * properties of this style.
      *
@@ -794,7 +817,6 @@ class Style {
         const color = this.icon.color;
 
         let icon = cacheStyle.get(image || key, size, color);
-
         if (!icon) {
             if (key && sprites) {
                 icon = getImage(sprites, key);

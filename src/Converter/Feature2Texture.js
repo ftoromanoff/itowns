@@ -36,30 +36,14 @@ function _drawPolygon(ctx, vertices, indices, style, size, extent, invCtxScale, 
 
     // draw line or edge of polygon
     if (style.stroke) {
+        // TO DO move to Style as fillPolygon()
         strokeStyle(style, ctx, invCtxScale);
         ctx.stroke();
     }
 
     // fill polygon only
     if (canBeFilled && style.fill) {
-        fillStyle(style, ctx, invCtxScale);
-        ctx.fill();
-    }
-}
-
-function fillStyle(style, ctx, invCtxScale) {
-    if (style.fill.pattern && ctx.fillStyle.src !== style.fill.pattern.src) {
-        ctx.fillStyle = ctx.createPattern(style.fill.pattern, 'repeat');
-        if (ctx.fillStyle.setTransform) {
-            ctx.fillStyle.setTransform(matrix.scale(invCtxScale));
-        } else {
-            console.warn('Raster pattern isn\'t completely supported on Ie and edge');
-        }
-    } else if (ctx.fillStyle !== style.fill.color) {
-        ctx.fillStyle = style.fill.color;
-    }
-    if (style.fill.opacity !== ctx.globalAlpha) {
-        ctx.globalAlpha = style.fill.opacity;
+        style.fillPolygon(ctx, matrix.scale(invCtxScale));
     }
 }
 
