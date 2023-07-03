@@ -75,44 +75,51 @@ function readVectorProperty(property, options) {
     }
 }
 
-function getImage(source, value) {
-    const target = document.createElement('img');
-
-    if (typeof source == 'string') {
-        if (value) {
-            const color = new Color(value);
-            Fetcher.texture(source, { crossOrigin: 'anonymous' })
-                .then((texture) => {
-                    const img = texture.image;
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                    ctx.drawImage(img, 0, 0);
-                    const imgd = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
-                    const pix = imgd.data;
-
-                    const colorToChange = new Color('white');
-                    for (let i = 0, n = pix.length; i < n; i += 4) {
-                        const d = deltaE(pix.slice(i, i + 3), colorToChange) / 100;
-                        pix[i] = (pix[i] * d +  color.r * 255 * (1 - d));
-                        pix[i + 1] = (pix[i + 1] * d +  color.g * 255 * (1 - d));
-                        pix[i + 2] = (pix[i + 2] * d +  color.b * 255 * (1 - d));
-                    }
-                    ctx.putImageData(imgd, 0, 0);
-                    target.src = canvas.toDataURL('image/png');
-                });
-        } else {
-            target.src = source;
-        }
-    } else if (source && source[value]) {
-        const sprite = source[value];
-        canvas.width = sprite.width;
-        canvas.height = sprite.height;
-        canvas.getContext('2d').drawImage(source.img, sprite.x, sprite.y, sprite.width, sprite.height, 0, 0, sprite.width, sprite.height);
-        target.src = canvas.toDataURL('image/png');
+async function loadImage(source) {
+    let promise = cacheStyle.get(source, 'null');
+    if (!promise) {
+        promise = Fetcher.texture(source, { crossOrigin: 'anonymous' });
+        cacheStyle.set(promise, source, 'null');
     }
+    return (await promise).image;
+}
 
-    return target;
+function drawImage(img, cropValues = { width: img.naturalWidth, height: img.naturalHeight }) {
+    canvas.width = cropValues.width;
+    canvas.height = cropValues.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img,
+        cropValues.x || 0, cropValues.y || 0, cropValues.width, cropValues.height,
+        0, 0, cropValues.width, cropValues.height);
+    return ctx.getImageData(0, 0, cropValues.width, cropValues.height);
+}
+
+async function getImage(source, options) {
+    if (!options.cropValues && !options.color) {
+        return source;
+    }
+    const img = options.img || await loadImage(source);
+    let imgd = drawImage(img, options.cropValues);
+    if (options.color) {
+        const imgdColored = cacheStyle.get(options.id || source, options.color);
+        if (!imgdColored) {
+            const pix = imgd.data;
+            const color = new Color(options.color);
+            const colorToChange = new Color('white');
+            for (let i = 0, n = pix.length; i < n; i += 4) {
+                const d = deltaE(pix.slice(i, i + 3), colorToChange) / 100;
+                pix[i] = (pix[i] * d +  color.r * 255 * (1 - d));
+                pix[i + 1] = (pix[i + 1] * d +  color.g * 255 * (1 - d));
+                pix[i + 2] = (pix[i + 2] * d +  color.b * 255 * (1 - d));
+            }
+            cacheStyle.set(imgd, options.id || source, options.color);
+        } else {
+            imgd = imgdColored;
+        }
+    }
+    canvas.getContext('2d').putImageData(imgd, 0, 0);
+
+    return canvas.toDataURL('image/png');
 }
 
 const textAnchorPosition = {
@@ -166,10 +173,16 @@ function defineStyleProperty(style, category, name, value, defaultValue) {
  * any [valid color string](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value).
  * Default is no value, which means no fill.
  * If the `Layer` is a `GeometryLayer` you can use `THREE.Color`.
- * @property {Image|Canvas|string|function} [fill.pattern] - Defines a pattern to fill the
- * surface with. It can be an `Image` to use directly, or an url to fetch the pattern
+ * @property {Image|Canvas|string|object|function} [fill.pattern] - Defines a pattern to fill the
+ * surface with. It can be an `Image` to use directly, an url to fetch the pattern or an object containing
+ * the url of the image to fetch and the transformation to apply.
  * from. See [this example] (http://www.itowns-project.org/itowns/examples/#source_file_geojson_raster)
  * for how to use.
+ * @property {string} [fill.pattern.source] the url to fetch the pattern image
+ * @property {object} [fill.pattern.cropValues] the x, y, width and height (in pixel) of the sub image to use.
+ * @property {THREE.Color} [fill.pattern.color] Can be any [valid color string]
+ * (https://developer.mozilla.org/en-US/docs/Web/CSS/color_value).
+ * It will change the color of the white pixels of the source image.
  * @property {number|function} [fill.opacity] - The opacity of the color or of the
  * pattern. Can be between `0.0` and `1.0`. Default is `1.0`.
  * For a `GeometryLayer`, this opacity property isn't used.
@@ -273,12 +286,13 @@ function defineStyleProperty(style, category, name, value, defaultValue) {
  *
  * @property {Object} [icon] - Defines the appearance of icons attached to label.
  * @property {string} [icon.source] - The url of the icons' image file.
- * @property {string} [icon.key] - The key of the icons' image in a vector tile data set.
+ * @property {string} [icon.id] - The id of the icons' sub-image in a vector tile data set.
+ * @property {string} [icon.cropValues] - the x, y, width and height (in pixel) of the sub image to use..
  * @property {string} [icon.anchor] - The anchor of the icon compared to the label position.
  * Can be `left`, `bottom`, `right`, `center`, `top-left`, `top-right`, `bottom-left`
  * or `bottom-right`. Default is `center`.
- * @property {number} [icon.size] - If the icon's image is passed with `icon.source` or
- * `icon.key`, its size when displayed on screen is multiplied by `icon.size`. Default is `1`.
+ * @property {number} [icon.size] - If the icon's image is passed with `icon.source` and/or
+ * `icon.id`, its size when displayed on screen is multiplied by `icon.size`. Default is `1`.
  * @property {string|function} [icon.color] - The color of the icon. Can be any [valid
  * color string](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value).
  * It will change the color of the white pixels of the icon source image.
@@ -432,12 +446,13 @@ export class StyleOptions {}
  *
  * @property {Object} icon - Defines the appearance of icons attached to label.
  * @property {string} icon.source - The url of the icons' image file.
- * @property {string} icon.key - The key of the icons' image in a vector tile data set.
+ * @property {string} icon.id - The id of the icons' sub-image in a vector tile data set.
+ * @property {string} icon.cropValues - the x, y, width and height (in pixel) of the sub image to use.
  * @property {string} icon.anchor - The anchor of the icon compared to the label position.
  * Can be `left`, `bottom`, `right`, `center`, `top-left`, `top-right`, `bottom-left`
  * or `bottom-right`. Default is `center`.
- * @property {number} icon.size - If the icon's image is passed with `icon.source` or
- * `icon.key`, its size when displayed on screen is multiplied by `icon.size`. Default is `1`.
+ * @property {number} icon.size - If the icon's image is passed with `icon.source` and/or
+ * `icon.id`, its size when displayed on screen is multiplied by `icon.size`. Default is `1`.
  * @property {string|function} icon.color - The color of the icon. Can be any [valid
  * color string](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value).
  * It will change the color of the white pixels of the icon source image.
@@ -501,12 +516,6 @@ class Style {
         defineStyleProperty(this, 'fill', 'base_altitude', params.fill.base_altitude);
         defineStyleProperty(this, 'fill', 'extrusion_height', params.fill.extrusion_height);
 
-        if (typeof this.fill.pattern == 'string') {
-            Fetcher.texture(this.fill.pattern).then((pattern) => {
-                this.fill.pattern = pattern.image;
-            });
-        }
-
         this.stroke = {};
         defineStyleProperty(this, 'stroke', 'color', params.stroke.color);
         defineStyleProperty(this, 'stroke', 'opacity', params.stroke.opacity, 1.0);
@@ -545,7 +554,8 @@ class Style {
 
         this.icon = {};
         defineStyleProperty(this, 'icon', 'source', params.icon.source);
-        defineStyleProperty(this, 'icon', 'key', params.icon.key);
+        defineStyleProperty(this, 'icon', 'id', params.icon.id);
+        defineStyleProperty(this, 'icon', 'cropValues', params.icon.id);
         defineStyleProperty(this, 'icon', 'anchor', params.icon.anchor, 'center');
         defineStyleProperty(this, 'icon', 'size', params.icon.size, 1);
         defineStyleProperty(this, 'icon', 'color', params.icon.color);
@@ -562,6 +572,9 @@ class Style {
     drawingStylefromContext(context) {
         const style = {};
         if (this.fill.color || this.fill.pattern || context.globals.fill) {
+            if (typeof this.fill.pattern === 'string') {
+                this.fill.pattern = { source: this.fill.pattern };
+            }
             mapPropertiesFromContext('fill', this, style, context);
         }
         if (this.stroke.color || context.globals.stroke) {
@@ -676,7 +689,11 @@ class Style {
             this.fill.color = color;
             this.fill.opacity = readVectorProperty(layer.paint['fill-opacity']) || opacity;
             if (layer.paint['fill-pattern'] && sprites) {
-                this.fill.pattern = getImage(sprites, layer.paint['fill-pattern']);
+                this.fill.pattern = {
+                    id: layer.paint['fill-pattern'],
+                    source: sprites.source,
+                    cropValues: sprites[layer.paint['fill-pattern']],
+                };
             }
 
             if (layer.paint['fill-outline-color']) {
@@ -739,9 +756,13 @@ class Style {
             }
 
             // additional icon
-            const key = readVectorProperty(layer.layout['icon-image']);
-            if (key) {
-                this.icon.key = key;
+            const icon = readVectorProperty(layer.layout['icon-image']);
+            if (icon) {
+                this.icon.id = icon;
+                this.icon.source = sprites?.source || icon;
+                if (sprites) {
+                    this.icon.cropValues = sprites[icon];
+                }
                 this.icon.size = readVectorProperty(layer.layout['icon-size']) || 1;
                 const { color, opacity } = rgba2rgb(readVectorProperty(layer.paint['icon-color'], { type: 'color' }));
                 this.icon.color = color;
@@ -752,13 +773,44 @@ class Style {
     }
 
     /**
+     * Applies the style.fill to a polygon of the texture canvas
+     * @param {CanvasRenderingContext2D} txtCtx The Context 2D of the texture canvas
+     * @param {DOMMatrix} matrix The DOM matrix scaled to generate pattenr (if any)
+     * @param {DOMMatrix} invCtxScale The DOM matrix scaled to generate pattenr (if any)
+     * @param {Path2D} polygon The current texture canvas polygon
+     */
+    async applyToCanvasPolygon(txtCtx, matrix, invCtxScale, polygon) {
+        // if (this.fill.pattern && ctx.fillStyle.src !== this.fill.pattern.src) {
+        // need doc for the ctx.fillStyle.src that seems to always be undefined
+        if (this.fill.pattern) {
+            let img = this.fill.pattern;
+            if (this.fill.pattern.source) {
+                img = await loadImage(this.fill.pattern.source);
+            }
+            drawImage(img, this.fill.pattern.cropValues);
+
+            txtCtx.fillStyle = txtCtx.createPattern(canvas, 'repeat');
+            if (txtCtx.fillStyle.setTransform) {
+                txtCtx.fillStyle.setTransform(matrix.scale(invCtxScale));
+            } else {
+                console.warn('Raster pattern isn\'t completely supported on Ie and edge', txtCtx.fillStyle);
+            }
+        } else if (txtCtx.fillStyle !== this.fill.color) {
+            txtCtx.fillStyle = this.fill.color;
+        }
+        if (this.fill.opacity !== txtCtx.globalAlpha) {
+            txtCtx.globalAlpha = this.fill.opacity;
+        }
+        txtCtx.fill(polygon);
+    }
+
+    /**
      * Applies this style to a DOM element. Limited to the `text` and `icon`
      * properties of this style.
      *
      * @param {Element} domElement - The element to set the style to.
-     * @param {Object} sprites - the sprites.
      */
-    applyToHTML(domElement, sprites) {
+    async applyToHTML(domElement) {
         domElement.style.padding = `${this.text.padding}px`;
         domElement.style.maxWidth = `${this.text.wrap}em`;
 
@@ -780,25 +832,17 @@ class Style {
             domElement.setAttribute('data-before', domElement.textContent);
         }
 
-        if (!this.icon.source && !this.icon.key) {
+        if (!this.icon.source) {
             return;
         }
 
-        const image = this.icon.source;
-        const size = this.icon.size;
-        const key = this.icon.key;
-        const color = this.icon.color;
-
-        let icon = cacheStyle.get(image || key, size, color);
-
-        if (!icon) {
-            if (key && sprites) {
-                icon = getImage(sprites, key);
-            } else {
-                icon = getImage(image, color);
-            }
-            cacheStyle.set(icon, image || key, size, color);
-        }
+        const icon = document.createElement('img');
+        const options = {
+            id: this.icon.id,
+            color: this.icon.color,
+            cropValues: this.icon.cropValues,
+        };
+        icon.src = await getImage(this.icon.source, options);
 
         const addIcon = () => {
             const cIcon = icon.cloneNode();
@@ -857,6 +901,7 @@ class Style {
         } else {
             icon.addEventListener('load', addIcon);
         }
+        return icon;
     }
 
     /**

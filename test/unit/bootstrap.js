@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 import fetch from 'node-fetch';
 
 global.window = {
@@ -71,6 +72,29 @@ class DOMElement {
 // Mock HTMLDivElement for Mocha
 global.HTMLDivElement = DOMElement;
 
+class HTMLImageElement extends DOMElement {
+    constructor(width, height) {
+        super();
+        this.width = width || 10;
+        this.height = height || 10;
+        this.naturalWidth = this.width;
+        this.naturalHeight = this.height;
+        Object.defineProperty(this, 'src', {
+            set: () => { this.emitEvent('load'); },
+        });
+    }
+}
+
+class CanvasPattern {
+    // eslint-disable-next-line no-unused-vars
+    setTransform(matrix) { return undefined; }
+}
+
+class DOMMatrix {
+    // eslint-disable-next-line no-unused-vars
+    scale(matrix) { return [1, 1, 1, 1]; }
+}
+
 // Mock document object for Mocha.
 global.document = {
     createElement: (type) => {
@@ -112,6 +136,11 @@ global.document = {
                     image.height = imageData.sh;
                     return image;
                 },
+                // eslint-disable-next-line no-unused-vars
+                createPattern: (image, repetition) => {
+                    const canvasPattern = new CanvasPattern();
+                    return canvasPattern;
+                },
                 canvas,
             });
 
@@ -119,13 +148,12 @@ global.document = {
 
             return canvas;
         } else if (type == 'img') {
-            const img = new DOMElement();
-            img.width = 10;
-            img.height = 10;
-            Object.defineProperty(img, 'src', {
-                set: () => { img.emitEvent('load'); },
-            });
+            const img = new HTMLImageElement();
             return img;
+        } else if (type == 'svg') {
+            const svg = new DOMElement();
+            svg.createSVGMatrix = () => new DOMMatrix();
+            return svg;
         }
 
         return new DOMElement();
@@ -135,6 +163,13 @@ global.document = {
 };
 
 global.document.documentElement = global.document.createElement();
+
+class Path2D {
+    moveTo() {}
+    lineTo() {}
+}
+
+global.Path2D = Path2D;
 
 class Renderer {
     constructor() {
