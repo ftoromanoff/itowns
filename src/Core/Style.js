@@ -526,8 +526,8 @@ class Style {
         defineStyleProperty(this, 'point', 'opacity', params.point.opacity, 1.0);
         defineStyleProperty(this, 'point', 'radius', params.point.radius, 2.0);
         defineStyleProperty(this, 'point', 'width', params.point.width, 0.0);
-        defineStyleProperty(this, 'point', 'base_altitude', params.point.base_altitude, base_altitudeDefault);
         defineStyleProperty(this, 'point', 'model', params.point.model);
+        defineStyleProperty(this, 'point', 'base_altitude', params.point.base_altitude, base_altitudeDefault);
 
         this.text = {};
         defineStyleProperty(this, 'text', 'field', params.text.field);
