@@ -3,7 +3,6 @@ import { STRATEGY_MIN_NETWORK_TRAFFIC } from 'Layer/LayerUpdateStrategy';
 import InfoLayer from 'Layer/InfoLayer';
 import Source from 'Source/Source';
 import Cache from 'Core/Scheduler/Cache';
-import Style from 'Core/Style';
 
 /**
  * @property {boolean} isLayer - Used to checkout whether this layer is a Layer.
@@ -98,12 +97,9 @@ class Layer extends THREE.EventDispatcher {
             throw new Error(`Layer ${id} needs Source`);
         }
         super();
-        if (config.style && !(config.style instanceof Style)) {
-            if (typeof config.style.fill?.pattern === 'string') {
-                console.warn('Using style.fill.pattern = { source: Img|url } is adviced');
-                config.style.fill.pattern = { source: config.style.fill.pattern };
-            }
-            config.style = new Style(config.style);
+        if (config.style && typeof config.style.fill?.pattern === 'string') {
+            console.warn('Using style.fill.pattern = { source: Img|url } is adviced');
+            config.style.fill.pattern = { source: config.style.fill.pattern };
         }
         this.isLayer = true;
 
