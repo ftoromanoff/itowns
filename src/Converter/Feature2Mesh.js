@@ -365,19 +365,47 @@ function featureToPolygon(feature, options) {
         const lastIndice = geometry.indices.slice(-1)[0];
         const end = lastIndice.offset + lastIndice.count;
         const count = end - start;
+        // const isClockWise = geometry.indices[0].ccw ?? (area(ptsIn, start, count) < 0);
+        // console.log(isClockWise);
 
         fillColorArray(colors, count, toColor(style.fill.color), start);
 
+        // faire plusieur triangle
+        console.log(geometry);
         const geomVertices = vertices.slice(start * 3, end * 3);
-        const holesOffsets = geometry.indices.map(i => i.offset - start).slice(1);
-        const triangles = Earcut(geomVertices, holesOffsets, 3);
+        // const nbTriangle = geometry.indices.filter(i => !i.ccw).length;
+        const ccw = geometry.indices.map(i => i.ccw);
+        // for (let j = 0; j < nbTriangle; j++) {
+            const nextTriangle = ccw.findIndex((ele, i) => i > 1 && !ele);
 
-        const startIndice = indices.length;
-        indices.length += triangles.length;
+            const holesOffsets = geometry.indices.map(i => i.offset - start).slice(1, nextTriangle === -1 ? undefined : nextTriangle);
+            const triangles = Earcut(geomVertices, holesOffsets, 3);
 
-        for (let i = 0; i < triangles.length; i++) {
-            indices[startIndice + i] = triangles[i] + start;
-        }
+            const startIndice = indices.length;
+            indices.length += triangles.length;
+
+            for (let i = 0; i < triangles.length; i++) {
+                indices[startIndice + i] = triangles[i] + start;
+            }
+        // }
+
+        // const holesOffsets = geometry.indices.map(i => i.offset - start).slice(1);
+        // const ccw = geometry.indices.map(i => i.ccw);
+        // const firstHole = ccw.findIndex(ele => ele);
+        // // console.log(ccw);
+        // console.log(firstHole);
+        // console.log(ccw.findIndex((ele, i) => i > firstHole && !ele));
+
+        // const triangles = Earcut(geomVertices, holesOffsets, 3);
+
+        // const startIndice = indices.length;
+        // indices.length += triangles.length;
+
+        // for (let i = 0; i < triangles.length; i++) {
+        //     indices[startIndice + i] = triangles[i] + start;
+        // }
+
+        // end plusieur triangle
 
         if (batchIds) {
             const id = options.batchId(geometry.properties, featureId);

@@ -147,6 +147,7 @@ function readPBF(file, options) {
         for (let i = sourceLayer.length - 1; i >= 0; i--) {
             const vtFeature = sourceLayer.feature(i);
             vtFeature.tileNumbers = { x, y: file.extent.row, z };
+            // console.log(vtFeature.toGeoJSON(x, file.extent.row, z));
             const layers = options.in.layers[layer_id].filter(l => l.filterExpression.filter({ zoom: z }, vtFeature) && z >= l.zoom.min && z < l.zoom.max);
             let feature;
 
@@ -157,6 +158,7 @@ function readPBF(file, options) {
                     feature.order = layer.order;
                     feature.style = options.in.styles[feature.id];
                     vtFeatureToFeatureGeometry(vtFeature, feature);
+                    // console.log(feature.geometries.length, feature);
                 } else if (!collection.features.find(f => f.id === layer.id)) {
                     feature = collection.newFeatureByReference(feature);
                     feature.id = layer.id;
