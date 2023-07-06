@@ -3,7 +3,6 @@ import { STRATEGY_MIN_NETWORK_TRAFFIC } from 'Layer/LayerUpdateStrategy';
 import InfoLayer from 'Layer/InfoLayer';
 import Source from 'Source/Source';
 import Cache from 'Core/Scheduler/Cache';
-import Style from 'Core/Style';
 
 /**
  * @property {boolean} isLayer - Used to checkout whether this layer is a Layer.
@@ -98,9 +97,6 @@ class Layer extends THREE.EventDispatcher {
             throw new Error(`Layer ${id} needs Source`);
         }
         super();
-        if (config.style && !(config.style instanceof Style)) {
-            config.style = new Style(config.style);
-        }
         this.isLayer = true;
 
         Object.assign(this, config);
