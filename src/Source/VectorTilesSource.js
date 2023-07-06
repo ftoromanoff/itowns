@@ -86,28 +86,29 @@ class VectorTilesSource extends TMSSource {
             }
 
             return style;
-        }).then((style) => {
-            const s = Object.keys(style.sources)[0];
-            const os = style.sources[s];
+        }).then((MapboxStyle) => {
+            const s = Object.keys(MapboxStyle.sources)[0];
+            const os = MapboxStyle.sources[s];
 
-            style.layers.forEach((layer, order) => {
-                layer.sourceUid = this.uid;
-                if (layer.type === 'background') {
-                    this.backgroundLayer = layer;
-                } else if (ffilter(layer)) {
-                    const style = new Style().setFromVectorTileLayer(layer, this.sprites, order, this.symbolToCircle);
-                    style.zoom.min = layer.minzoom || 0;
-                    style.zoom.max = layer.maxzoom || 22;
-                    this.styles[layer.id] = style;
+            MapboxStyle.layers.forEach((VTlayer, order) => {
+                VTlayer.sourceUid = this.uid;
+                if (VTlayer.type === 'background') {
+                    this.backgroundLayer = VTlayer;
+                } else if (ffilter(VTlayer)) {
+                    const style = new Style().setFromVectorTileLayer(VTlayer, this.sprites, order, this.symbolToCircle);
+                    this.styles[VTlayer.id] = style;
 
-                    if (!this.layers[layer['source-layer']]) {
-                        this.layers[layer['source-layer']] = [];
+                    if (!this.layers[VTlayer['source-layer']]) {
+                        this.layers[VTlayer['source-layer']] = [];
                     }
-                    this.layers[layer['source-layer']].push({
-                        id: layer.id,
+                    this.layers[VTlayer['source-layer']].push({
+                        id: VTlayer.id,
                         order,
-                        filterExpression: featureFilter(layer.filter),
-                        zoom: style.zoom,
+                        filterExpression: featureFilter(VTlayer.filter),
+                        zoom: {
+                            min: VTlayer.minzoom || 0,
+                            max: VTlayer.maxzoom || 22,
+                        },
                     });
                 }
             });

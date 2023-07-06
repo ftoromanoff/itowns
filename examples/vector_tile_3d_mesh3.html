@@ -81,79 +81,92 @@
             
             // ---------- DISPLAY VECTOR TILED MAP DATA AS A ColorLayer : ----------
 
-            // // // Define the source of the ColorLayer data : a vector tiled map from the geoportail.
-            // const waterSource = new itowns.VectorTilesSource({
-            //     style: 'http://localhost:8081/testMvt.json',
-            //     accessToken: 'pk.eyJ1Ijoidmhhd2siLCJhIjoiY2xmbWpqOXBoMGNmZDN2cjJwZXk0MXBzZiJ9.192VNPJG0VV9dGOCOX1gUw',
-            //     filter: (layer) => {
-            //         return layer.id === 'water';
-            //     },
-            // });
-
-            // // // // Create a ColorLayer to support map data.
-            // const mapLayer = new itowns.ColorLayer('MVT', {
-            //     source: waterSource,
-            //     // effect_type: itowns.colorLayerEffects.removeLightColor,
-            //     // effect_parameter: 2.5,
-            //     // addLabelLayer: { performance: true },
-            //     // style: new itowns.Style({
-            //     //     text: {
-            //     //         color: '#000000',
-            //     //         haloColor: '#ffffff',
-            //     //         haloWidth: 3,
-            //     //         haloBlur: 2,
-            //     //     }
-            //     // })
-            // });
-
-            // // // Add the ColorLayer to the scene and to the debug menu.
-            // view.addLayer(mapLayer)
-            //     .then(debugMenu.addLayerGUI.bind(debugMenu));
-
-            // ---------- DISPLAY VECTOR TILED BUILDING DATA AS 3D MESHES : ----------
-
-            // Define the source of the building data : those are vector tiled data from the geoportail.
-            const buildingsSource = new itowns.VectorTilesSource({
+            // Define the source of the ColorLayer data : a vector tiled map from the geoportail.
+            const waterSource = new itowns.VectorTilesSource({
                 style: 'http://localhost:8081/testMvt.json',
-                accessToken: 'pk.eyJ1Ijoidmhhd2siLCJhIjoiY2xmbWpqOXBoMGNmZDN2cjJwZXk0MXBzZiJ9.192VNPJG0VV9dGOCOX1gUw',
+                accessToken: 'pk.eyJ1IjoidGFtaWQyMTA2OCIsImEiOiJjbGlicGN2bWEwOWNvM2huejBwa2V1cGV0In0._dykOL_KbMkzWw8EXdclFw',
                 filter: (layer) => {
-                    return layer.id === 'building';
+                    return layer.id === 'water';
                 },
             });
 
-            // Get buildings ground elevation
-            function altitudeBuildings(properties, coord) {
+            // Get water ground elevation
+            function altitudeWater(properties, coord) {
                 if (coord) {
                     return itowns.DEMUtils.getElevationValueAt(view.tileLayer, coord);
                 }
             }
 
-            // Create a FeatureGeometryLayer to support building data.
-            var buildingsLayer = new itowns.FeatureGeometryLayer('VTBuilding',{
-                batchId: function (property, featureId) { return featureId; },
-                source: buildingsSource,
-                zoom: {
-                    min: 15,
-                    // max: 13,
-                },
+            // Create a ColorLayer to support map data.
+            const waterLayer = new itowns.FeatureGeometryLayer('Water_', {
+                source: waterSource,
+                transparent: true,
+                // zoom: {
+                //     min: 15,
+                //     max: 22,
+                // },
                 style: new itowns.Style({
                     fill: {
-                        base_altitude: (p, c) => {
-                            return (altitudeBuildings(p, c) || 0) + p.min_height;
+                        base_altitude: (p ,c) => {
+                            return altitudeWater(p,c);
                         },
-                        extrusion_height: (p) => {
-                            return p.height || 500;
-                        },
-                    },
+                        color: 'red',
+                    }
                 })
             });
 
-            // Add the FeatureGeometryLayer to the scene and to the debug menu.
-            view.addLayer(buildingsLayer)
-            .then((layer) => {
+            // Add the ColorLayer to the scene and to the debug menu.
+            view.addLayer(waterLayer)
+                // .then(debugMenu.addLayerGUI.bind(debugMenu));
+                .then((layer) => {
                 const gui = debug.GeometryDebug.createGeometryDebugUI(debugMenu.gui, view, layer);
                 debug.GeometryDebug.addWireFrameCheckbox(gui, view, layer);
             })
+
+            // ---------- DISPLAY VECTOR TILED BUILDING DATA AS 3D MESHES : ----------
+
+            // // Define the source of the building data : those are vector tiled data from the geoportail.
+            // const buildingsSource = new itowns.VectorTilesSource({
+            //     style: 'http://localhost:8081/testMvt.json',
+            //     accessToken: 'pk.eyJ1IjoidGFtaWQyMTA2OCIsImEiOiJjbGlicGN2bWEwOWNvM2huejBwa2V1cGV0In0._dykOL_KbMkzWw8EXdclFw',
+            //     filter: (layer) => {
+            //         return layer.id === 'building';
+            //     },
+            // });
+
+            // // Get buildings ground elevation
+            // function altitudeBuildings(properties, coord) {
+            //     if (coord) {
+            //         return itowns.DEMUtils.getElevationValueAt(view.tileLayer, coord);
+            //     }
+            // }
+
+            // // Create a FeatureGeometryLayer to support building data.
+            // var buildingsLayer = new itowns.FeatureGeometryLayer('VTBuilding',{
+            //     batchId: function (property, featureId) { return featureId; },
+            //     source: buildingsSource,
+            //     zoom: {
+            //         min: 15,
+            //         // max: 13,
+            //     },
+            //     style: new itowns.Style({
+            //         fill: {
+            //             base_altitude: (p, c) => {
+            //                 return (altitudeBuildings(p, c) || 0) + p.min_height;
+            //             },
+            //             extrusion_height: (p) => {
+            //                 return p.height || 500;
+            //             },
+            //         },
+            //     })
+            // });
+
+            // // Add the FeatureGeometryLayer to the scene and to the debug menu.
+            // view.addLayer(buildingsLayer)
+            // .then((layer) => {
+            //     const gui = debug.GeometryDebug.createGeometryDebugUI(debugMenu.gui, view, layer);
+            //     debug.GeometryDebug.addWireFrameCheckbox(gui, view, layer);
+            // })
 
             // ---------- DEBUG TOOLS : ----------
 
