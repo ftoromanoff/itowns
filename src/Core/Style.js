@@ -513,7 +513,6 @@ class Style {
         defineStyleProperty(this, 'fill', 'color', params.fill.color);
         defineStyleProperty(this, 'fill', 'opacity', params.fill.opacity, 1.0);
         defineStyleProperty(this, 'fill', 'pattern', params.fill.pattern);
-        defineStyleProperty(this, 'fill', 'base_altitude', params.fill.base_altitude);
         defineStyleProperty(this, 'fill', 'extrusion_height', params.fill.extrusion_height);
 
         this.stroke = {};
@@ -521,7 +520,6 @@ class Style {
         defineStyleProperty(this, 'stroke', 'opacity', params.stroke.opacity, 1.0);
         defineStyleProperty(this, 'stroke', 'width', params.stroke.width, 1.0);
         defineStyleProperty(this, 'stroke', 'dasharray', params.stroke.dasharray, []);
-        defineStyleProperty(this, 'stroke', 'base_altitude', params.stroke.base_altitude);
 
         this.point = {};
         defineStyleProperty(this, 'point', 'color', params.point.color);
@@ -530,7 +528,6 @@ class Style {
         defineStyleProperty(this, 'point', 'radius', params.point.radius, 2.0);
         defineStyleProperty(this, 'point', 'width', params.point.width, 0.0);
         defineStyleProperty(this, 'point', 'model', params.point.model);
-        defineStyleProperty(this, 'point', 'base_altitude', params.point.base_altitude);
 
         this.text = {};
         defineStyleProperty(this, 'text', 'field', params.text.field);
