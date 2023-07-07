@@ -522,12 +522,13 @@ function createInstancedMesh(mesh, count, ptsIn) {
  * Convert a [Feature]{@link Feature} of type POINT to a Instanced meshes
  *
  * @param {Object} feature
+ * @param {Object} options - options controlling the conversion
  * @returns {THREE.Mesh} mesh or GROUP of THREE.InstancedMesh
  */
-function pointsToInstancedMeshes(feature) {
+function pointsToInstancedMeshes(feature, options) {
     const ptsIn = feature.vertices;
     const count = feature.geometries.length;
-    const modelObject = feature.style.point.model.object;
+    const modelObject = options.layer.style.point.model.object;
 
     if (modelObject instanceof THREE.Mesh) {
         return createInstancedMesh(modelObject, count, ptsIn);
@@ -538,7 +539,7 @@ function pointsToInstancedMeshes(feature) {
         meshes.forEach(mesh => group.add(createInstancedMesh(mesh, count, ptsIn)));
         return group;
     } else {
-        throw new Error('The format of the model object provided in the feature style (feature.style.point.model.object) is not supported. Only THREE.Mesh or THREE.Object3D are supported.');
+        throw new Error('The format of the model object provided in the style (layer.style.point.model.object) is not supported. Only THREE.Mesh or THREE.Object3D are supported.');
     }
 }
 
@@ -557,9 +558,9 @@ function featureToMesh(feature, options) {
     let mesh;
     switch (feature.type) {
         case FEATURE_TYPES.POINT:
-            if (feature.style.point?.model?.object) {
+            if (options.layer?.style?.point?.model?.object) {
                 try {
-                    mesh = pointsToInstancedMeshes(feature);
+                    mesh = pointsToInstancedMeshes(feature, options);
                     mesh.isInstancedMesh = true;
                 } catch (e) {
                     mesh = featureToPoint(feature, options);
@@ -643,7 +644,12 @@ export default {
                 options.pointMaterial = ReferLayerProperties(new THREE.PointsMaterial(), this);
                 options.lineMaterial = ReferLayerProperties(new THREE.LineBasicMaterial(), this);
                 options.polygonMaterial = ReferLayerProperties(new THREE.MeshBasicMaterial(), this);
-                options.layer = this;
+                // options.layer.style will be used later on to define the final style.
+                // In the case we didn't instanciate the layer before the convert, we can directly
+                // pass a style using options.style.
+                // This is usually done in some tests and if you want to use Feature2Mesh.convert()
+                // as in examples/source_file_gpx_3d.html.
+                options.layer = this || { style: options.style };
             }
 
             const features = collection.features;
