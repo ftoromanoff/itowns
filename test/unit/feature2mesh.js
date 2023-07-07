@@ -3,7 +3,6 @@ import proj4 from 'proj4';
 import assert from 'assert';
 import GeoJsonParser from 'Parser/GeoJsonParser';
 import Feature2Mesh from 'Converter/Feature2Mesh';
-import Style from 'Core/Style';
 
 const geojson = require('../data/geojson/holes.geojson.json');
 const geojson2 = require('../data/geojson/simple.geojson.json');
@@ -98,26 +97,26 @@ describe('Feature2Mesh', function () {
     });
 
     it('convert to instanced meshes', function (done) {
-        const styleModel3D = new Style({
+        const styleModel3D = {
             point: {
                 model: { object: makeTree() },
             },
-        });
-        parsed3.then((collection) => {
-            for (const feat of collection.features) { feat.style = styleModel3D; }
-            const mesh = Feature2Mesh.convert()(collection).meshes;
+        };
+        parsed3
+            .then((collection) => {
+                const mesh = Feature2Mesh.convert({ style: styleModel3D })(collection).meshes;
 
-            let isInstancedMesh = false;
-            mesh.traverse((obj) => {
-                if (obj.isInstancedMesh) {
-                    isInstancedMesh = true;
-                    return null;
-                }
-            },
-            );
-            assert.ok(isInstancedMesh);
-            assert.equal(mesh.children.length, 3);
-            done();
-        }).catch(done);
+                let isInstancedMesh = false;
+                mesh.traverse((obj) => {
+                    if (obj.isInstancedMesh) {
+                        isInstancedMesh = true;
+                        return null;
+                    }
+                },
+                );
+                assert.ok(isInstancedMesh);
+                assert.equal(mesh.children.length, 3);
+                done();
+            }).catch(done);
     });
 });
