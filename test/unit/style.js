@@ -65,45 +65,50 @@ describe('Style', function () {
 
         const sourceString = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/images/kml_circle.png';
         describe('with icon.source (test getImage())', () => {
-            it('icon.source is string but icon.key is undefined ', () => {
-                const dom = document.createElement('canvas');
+            it('icon.source is string but icon.key is undefined ', function (done) {
+                const dom = document.createElement('div');
                 const style1 = style.clone(style);
                 style1.icon = {
                     source: 'icon',
                 };
-                style1.applyToHTML(dom);
-                const img = cacheStyle.get('icon', 1);
-                img.emitEvent('load');
-                assert.equal(dom.children[0].class, 'itowns-icon');
-                assert.equal(dom.children[0].style['z-index'], -1);
+                style1.applyToHTML(dom)
+                    .then((icon) => {
+                        icon.emitEvent('load');
+                        assert.equal(dom.children[0].class, 'itowns-icon');
+                        assert.equal(dom.children[0].style['z-index'], -1);
+                        done();
+                    }).catch(done);
             });
-            it('icon.source is string and icon.color=#0400fd', () => {
-                const dom = document.createElement('canvas');
+            it('icon.source is string and icon.color=#0400fd', function (done) {
+                const dom = document.createElement('div');
                 const style1 = style.clone(style);
                 style1.icon = {
                     source: sourceString,
                     color: '#0400fd',
                 };
-                style1.applyToHTML(dom);
-                const img = cacheStyle.get(sourceString, 1);
-
-                img.emitEvent('load');
-                assert.equal(dom.children.length, 1);
-                assert.equal(dom.children[0].class, 'itowns-icon');
-                assert.equal(dom.children[0].style['z-index'], -1);
+                style1.applyToHTML(dom)
+                    .then((icon) => {
+                        icon.emitEvent('load');
+                        assert.equal(dom.children.length, 1);
+                        assert.equal(dom.children[0].class, 'itowns-icon');
+                        assert.equal(dom.children[0].style['z-index'], -1);
+                        done();
+                    }).catch(done);
             });
-            it('with icon.key and sprites', () => {
-                const dom = document.createElement('canvas');
+            it('with icon.key and sprites', function (done) {
+                const dom = document.createElement('div');
                 const style1 = style.clone(style);
                 style1.icon = {
                     key: 'fill-pattern',
                 };
 
-                style1.applyToHTML(dom, sprites);
-                const img = cacheStyle.get('fill-pattern', 1);
-                img.emitEvent('load');
-                assert.equal(dom.children[0].class, 'itowns-icon');
-                assert.equal(dom.children[0].style['z-index'], -1);
+                style1.applyToHTML(dom, sprites)
+                    .then((icon) => {
+                        icon.emitEvent('load');
+                        assert.equal(dom.children[0].class, 'itowns-icon');
+                        assert.equal(dom.children[0].style['z-index'], -1);
+                        done();
+                    }).catch(done);
             });
         });
     });

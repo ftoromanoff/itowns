@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FEATURE_TYPES } from 'Core/Feature';
 import Extent from 'Core/Geographic/Extent';
 import Coordinates from 'Core/Geographic/Coordinates';
+import Style from 'Core/Style';
 
 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 const matrix = svg.createSVGMatrix();
@@ -22,14 +23,14 @@ function drawPolygon(ctx, vertices, indices = [{ offset: 0, count: 1 }], style =
 
 function _drawPolygon(ctx, vertices, indices, style, size, extent, invCtxScale, canBeFilled) {
     // build contour
-    ctx.beginPath();
+    const path = new Path2D();
     for (const indice of indices) {
         if (indice.extent && Extent.intersectsExtent(indice.extent, extent)) {
             const offset = indice.offset * size;
             const count = offset + indice.count * size;
-            ctx.moveTo(vertices[offset], vertices[offset + 1]);
+            path.moveTo(vertices[offset], vertices[offset + 1]);
             for (let j = offset + size; j < count; j += size) {
-                ctx.lineTo(vertices[j], vertices[j + 1]);
+                path.lineTo(vertices[j], vertices[j + 1]);
             }
         }
     }
@@ -38,14 +39,16 @@ function _drawPolygon(ctx, vertices, indices, style, size, extent, invCtxScale, 
     if (style.stroke) {
         // TO DO move to Style as fillPolygon()
         strokeStyle(style, ctx, invCtxScale);
-        ctx.stroke();
+        ctx.stroke(path);
     }
 
     // fill polygon only
     if (canBeFilled && style.fill) {
-        style.fillPolygon(ctx, matrix.scale(invCtxScale));
+        Style.prototype.applyToCanvas.call(style, ctx, matrix, invCtxScale, path);
     }
 }
+
+
 
 function strokeStyle(style, ctx, invCtxScale) {
     if (ctx.strokeStyle !== style.stroke.color) {

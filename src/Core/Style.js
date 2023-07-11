@@ -79,44 +79,55 @@ function readVectorProperty(property, options) {
     }
 }
 
-function getImage(source, value) {
-    const target = document.createElement('img');
-
-    if (typeof source == 'string') {
-        if (value) {
-            const color = new Color(value);
-            Fetcher.texture(source, { crossOrigin: 'anonymous' })
-                .then((texture) => {
-                    const img = texture.image;
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                    ctx.drawImage(img, 0, 0);
-                    const imgd = ctx.getImageData(0, 0, img.naturalWidth, img.naturalHeight);
-                    const pix = imgd.data;
-
-                    const colorToChange = new Color('white');
-                    for (let i = 0, n = pix.length; i < n; i += 4) {
-                        const d = deltaE(pix.slice(i, i + 3), colorToChange) / 100;
-                        pix[i] = (pix[i] * d +  color.r * 255 * (1 - d));
-                        pix[i + 1] = (pix[i + 1] * d +  color.g * 255 * (1 - d));
-                        pix[i + 2] = (pix[i + 2] * d +  color.b * 255 * (1 - d));
-                    }
-                    ctx.putImageData(imgd, 0, 0);
-                    target.src = canvas.toDataURL('image/png');
-                });
-        } else {
-            target.src = source;
-        }
-    } else if (source && source[value]) {
-        const sprite = source[value];
-        canvas.width = sprite.width;
-        canvas.height = sprite.height;
-        canvas.getContext('2d').drawImage(source.img, sprite.x, sprite.y, sprite.width, sprite.height, 0, 0, sprite.width, sprite.height);
-        target.src = canvas.toDataURL('image/png');
+async function loadImage(source) {
+    // console.log('loadImage');
+    let promise = cacheStyle.get(source, 'null');
+    if (!promise) {
+        // console.log('!!!!!!!!!!!!promise');
+        promise = Fetcher.texture(source, { crossOrigin: 'anonymous' });
+        cacheStyle.set(promise, source, 'null');
     }
+    return (await promise).image;
+}
 
-    return target;
+function drawImage(img, cropValues = { width: img.naturalWidth, height: img.naturalHeight }) {
+    canvas.width = cropValues.width;
+    canvas.height = cropValues.height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img,
+        cropValues.x || 0, cropValues.y || 0, cropValues.width, cropValues.height,
+        0, 0, cropValues.width, cropValues.height);
+    return ctx.getImageData(0, 0, cropValues.width, cropValues.height);
+}
+
+async function getImage(source, options) {
+    // 1. load image
+    // 2. trouver taille crop
+    // 2. cropper (independament de sprite)
+    // 3. change color
+    // 4. return src url
+    const img = options.img || await loadImage(source);
+    let imgd = drawImage(img, options.cropValues);
+    if (options.color) {
+        const imgdColored = cacheStyle.get(options.id || source, options.color);
+        if (!imgdColored) {
+            const pix = imgd.data;
+            const color = new Color(options.color);
+            const colorToChange = new Color('white');
+            for (let i = 0, n = pix.length; i < n; i += 4) {
+                const d = deltaE(pix.slice(i, i + 3), colorToChange) / 100;
+                pix[i] = (pix[i] * d +  color.r * 255 * (1 - d));
+                pix[i + 1] = (pix[i + 1] * d +  color.g * 255 * (1 - d));
+                pix[i + 2] = (pix[i + 2] * d +  color.b * 255 * (1 - d));
+            }
+            cacheStyle.set(imgd, options.id || source, options.color);
+        } else {
+            imgd = imgdColored;
+        }
+    }
+    canvas.getContext('2d').putImageData(imgd, 0, 0);
+
+    return canvas.toDataURL('image/png');
 }
 
 const textAnchorPosition = {
@@ -170,10 +181,16 @@ function defineStyleProperty(style, category, name, value, defaultValue) {
  * any [valid color string](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value).
  * Default is no value, which means no fill.
  * If the `Layer` is a `GeometryLayer` you can use `THREE.Color`.
- * @property {Image|Canvas|string|function} [fill.pattern] - Defines a pattern to fill the
- * surface with. It can be an `Image` to use directly, or an url to fetch the pattern
+ * @property {Image|Canvas|string|object|function} [fill.pattern] - Defines a pattern to fill the
+ * surface with. It can be an `Image` to use directly, an url to fetch the pattern or an object containing
+ * the url of the image to fetch and the transformation to apply.
  * from. See [this example] (http://www.itowns-project.org/itowns/examples/#source_file_geojson_raster)
  * for how to use.
+ * @property {string} [fill.pattern.source] the url to fetch the pattern image
+ * @property {object} [fill.pattern.cropValues] the x, y, width and height (in pixel) of the sub image to use.
+ * @property {THREE.Color} [fill.pattern.color] Can be any [valid color string]
+ * (https://developer.mozilla.org/en-US/docs/Web/CSS/color_value).
+ * It will change the color of the white pixels of the source image.
  * @property {number|function} [fill.opacity] - The opacity of the color or of the
  * pattern. Can be between `0.0` and `1.0`. Default is `1.0`.
  * For a `GeometryLayer`, this opacity property isn't used.
@@ -560,6 +577,9 @@ class Style {
     drawingStylefromContext(context) {
         const style = {};
         if (this.fill.color || this.fill.pattern || context.globals.fill) {
+            if (typeof this.fill.pattern === 'string') {
+                this.fill.pattern = { source: this.fill.pattern };
+            }
             mapPropertiesFromContext('fill', this, style, context);
         }
         if (this.stroke.color || context.globals.stroke) {
@@ -674,7 +694,11 @@ class Style {
             this.fill.color = color;
             this.fill.opacity = readVectorProperty(layer.paint['fill-opacity']) || opacity;
             if (layer.paint['fill-pattern'] && sprites) {
-                this.fill.pattern = getImage(sprites, layer.paint['fill-pattern']);
+                this.fill.pattern = {
+                    id: layer.paint['fill-pattern'],
+                    source: sprites.source,
+                    cropValues: sprites[layer.paint['fill-pattern']],
+                };
             }
 
             if (layer.paint['fill-outline-color']) {
@@ -750,32 +774,35 @@ class Style {
     }
 
     /**
-     * Applies the style.fill to polygon domElement
-     * @param {CanvasRenderingContext2D} canevasCtx The Context 2D of the polygon domElement
-     * @param {DOMMatrix} scaledMatrix The DOM matrix scaled to generate pattenr (if any)
+     * Applies the style.fill to a polygon of the texture canvas
+     * @param {CanvasRenderingContext2D} txtCtx The Context 2D of the texture canvas
+     * @param {DOMMatrix} matrix The DOM matrix scaled to generate pattenr (if any)
+     * @param {DOMMatrix} invCtxScale The DOM matrix scaled to generate pattenr (if any)
+     * @param {Path2D} polygon The current texture canvas polygon
      */
-    async fillPolygon(canevasCtx, scaledMatrix) {
+    async applyToCanvas(txtCtx, matrix, invCtxScale, polygon) {
+        // if (this.fill.pattern && ctx.fillStyle.src !== this.fill.pattern.src) {
         if (this.fill.pattern) {
-            if (typeof this.fill.pattern === 'string') {
-                let fillPatternImg = cacheStyle.get(this.fill.pattern);
-                if (!fillPatternImg) {
-                    fillPatternImg = (await Fetcher.texture(this.fill.pattern)).image;
-                    cacheStyle.set(fillPatternImg, this.fill.pattern);
-                }
-                canevasCtx.fillStyle = canevasCtx.createPattern(fillPatternImg, 'repeat');
-                if (canevasCtx.fillStyle.setTransform) {
-                    canevasCtx.fillStyle.setTransform(scaledMatrix);
-                } else {
-                    console.warn('Raster pattern isn\'t completely supported on Ie and edge');
-                }
+            let img = this.fill.pattern;
+            if (this.fill.pattern.source) {
+                img = await loadImage(this.fill.pattern.source);
             }
-        } else if (canevasCtx.fillStyle !== this.fill.color) {
-            canevasCtx.fillStyle = this.fill.color;
+            drawImage(img, this.fill.pattern.cropValues);
+
+            txtCtx.fillStyle = txtCtx.createPattern(canvas, 'repeat');
+            if (txtCtx.fillStyle.setTransform) {
+                txtCtx.fillStyle.setTransform(matrix.scale(invCtxScale));
+            } else {
+                console.warn('Raster pattern isn\'t completely supported on Ie and edge', txtCtx.fillStyle);
+            }
+        } else if (txtCtx.fillStyle !== this.fill.color) {
+            txtCtx.fillStyle = this.fill.color;
         }
-        if (this.fill.opacity !== canevasCtx.globalAlpha) {
-            canevasCtx.globalAlpha = this.fill.opacity;
+        if (this.fill.opacity !== txtCtx.globalAlpha) {
+            txtCtx.globalAlpha = this.fill.opacity;
         }
-        canevasCtx.fill();
+        // console.log('toto', ctx.fillStyle.src);
+        txtCtx.fill(polygon);
     }
 
     /**
@@ -783,9 +810,9 @@ class Style {
      * properties of this style.
      *
      * @param {Element} domElement - The element to set the style to.
-     * @param {Object} sprites - the sprites.
+     * @param {Object} [sprites] - the sprites.
      */
-    applyToHTML(domElement, sprites) {
+    async applyToHTML(domElement, sprites) {
         domElement.style.padding = `${this.text.padding}px`;
         domElement.style.maxWidth = `${this.text.wrap}em`;
 
@@ -811,19 +838,22 @@ class Style {
             return;
         }
 
-        const image = this.icon.source;
-        const size = this.icon.size;
-        const key = this.icon.key;
-        const color = this.icon.color;
-
-        let icon = cacheStyle.get(image || key, size, color);
-        if (!icon) {
-            if (key && sprites) {
-                icon = getImage(sprites, key);
-            } else {
-                icon = getImage(image, color);
-            }
-            cacheStyle.set(icon, image || key, size, color);
+        const icon = document.createElement('img');
+        const options = {
+            id: this.icon.key,
+            // sprite: sprites[this.icon.key],
+            color: this.icon.color,
+        };
+        // TO DO homogenize th VectorTileSource.icon: change key and source
+        if (sprites) {
+            options.cropValues = sprites[this.icon.key];
+            const url = await getImage(sprites.source, options);
+            icon.src = url;
+        } else if (this.icon.color) {
+            const url = await getImage(this.icon.source, options);
+            icon.src = url;
+        } else {
+            icon.src = this.icon.source;
         }
 
         const addIcon = () => {
@@ -883,6 +913,7 @@ class Style {
         } else {
             icon.addEventListener('load', addIcon);
         }
+        return icon;
     }
 
     /**

@@ -78,10 +78,13 @@ class VectorTilesSource extends TMSSource {
                 return Fetcher.json(spriteUrl, this.networkOptions).then((sprites) => {
                     this.sprites = sprites;
                     const imgUrl = urlParser.normalizeSpriteURL(baseurl, '', '.png', this.accessToken);
-                    return Fetcher.texture(imgUrl, this.networkOptions).then((texture) => {
-                        this.sprites.img = texture.image;
-                        return style;
-                    });
+                    this.sprites.source = imgUrl;
+                    return style;
+                    // return Fetcher.texture(imgUrl, this.networkOptions).then((texture) => {
+                    //     this.sprites.img = texture.image;
+                    //     console.log(typeof this.sprites.img, this.sprites.img.constructor.name);
+                    //     return style;
+                    // });
                 });
             }
 
@@ -93,6 +96,7 @@ class VectorTilesSource extends TMSSource {
             style.layers.forEach((layer, order) => {
                 layer.sourceUid = this.uid;
                 if (layer.type === 'background') {
+                // if (layer.type === 'background' || layer.if === 'bckgrd') {
                     this.backgroundLayer = layer;
                 } else if (ffilter(layer)) {
                     const style = new Style().setFromVectorTileLayer(layer, this.sprites, order, this.symbolToCircle);
@@ -107,7 +111,10 @@ class VectorTilesSource extends TMSSource {
                         id: layer.id,
                         order,
                         filterExpression: featureFilter(layer.filter),
-                        zoom: style.zoom,
+                        zoom: {
+                            min: layer.minzoom || 0,
+                            max: layer.maxzoom || 24,
+                        },
                     });
                 }
             });
