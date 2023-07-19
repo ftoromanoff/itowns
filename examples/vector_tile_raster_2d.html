@@ -33,6 +33,10 @@
             // Instanciate PlanarView
             var view = new itowns.PlanarView(viewerDiv, extent, {
                 maxSubdivisionLevel: 20,
+                placement: {
+                    coord: new itowns.Coordinates('EPSG:4326', -1.0679463052520959, 45.528880767171),
+                    range: 50000,
+                },
                 controls: {
                     // We do not want the user to zoom out too much
                     maxAltitude: 40000000,
