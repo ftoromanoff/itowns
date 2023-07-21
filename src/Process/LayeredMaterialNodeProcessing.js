@@ -124,7 +124,6 @@ export function updateLayeredMaterialNodeImagery(context, layer, node, parent) {
     const failureParams = node.layerUpdateState[layer.id].failureParams;
     const destinationLevel = extentsDestination[0].zoom || node.level;
     const targetLevel = chooseNextLevelToFetch(layer.updateStrategy.type, node, destinationLevel, nodeLayer.level, layer, failureParams);
-
     if ((!layer.source.isVectorSource && targetLevel <= nodeLayer.level) || targetLevel > destinationLevel) {
         if (failureParams.lowestLevelError != Infinity) {
             // this is the highest level found in case of error.
