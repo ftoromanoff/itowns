@@ -159,18 +159,18 @@ export class FeatureGeometry {
      * No local transformation is made on coordinates.
      *
      * @param {Feature} feature - the feature containing the geometry
-     * @param {number} long The longitude coordinate.
-     * @param {number} lat The latitude coordinate.
+     * @param {number} x an x coordinate.
+     * @param {number} y a y coordinate.
      * @param {THREE.Vector3} [normal] the normal on coordinates (only for `EPSG:4978` projection).
-     */
-    pushCoordinatesValues(feature, long, lat, normal) {
-        const altitude = this.baseAltitude(feature);
-
-        _setGeometryValues(this, feature, long, lat, altitude, normal);
+     * @param {coordIn} coordIn The proj coord if any.
+    */
+    pushCoordinatesValues(feature, x, y, normal, coordIn) {
+        const altitude = this.baseAltitude(feature, coordIn);
+        _setGeometryValues(this, feature, x, y, altitude, normal);
 
         // expand extent if present
         if (this.#currentExtent) {
-            this.#currentExtent.expandByValuesCoordinates(long, lat);
+            this.#currentExtent.expandByValuesCoordinates(x, y);
         }
     }
 
