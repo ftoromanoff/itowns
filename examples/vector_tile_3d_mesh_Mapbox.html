@@ -33,7 +33,7 @@
             const placement = {
                 coord: new itowns.Coordinates('EPSG:4326', 5.223762, 46.192268),
                 range: 5000,
-                tilt: 45,
+                // tilt: 45,
             };
 
             // `viewerDiv` will contain iTowns' rendering area (`<canvas>`)
@@ -82,7 +82,7 @@
             // // Define the source of the building data : those are vector tiled data from the geoportail.
             const buildingsSource = new itowns.VectorTilesSource({
                 style: 'http://localhost:8081/testMvt.json',
-                accessToken: 'pk.eyJ1IjoidGFtaWQyMTA2OCIsImEiOiJjbGlicGN2bWEwOWNvM2huejBwa2V1cGV0In0._dykOL_KbMkzWw8EXdclFw',
+                accessToken: 'pk.eyJ1IjoiZnRvcm9tYW5vZmYiLCJhIjoiY2xpd3ZhZXU0MDF1ZzNmcWZmeWRqM3o5aSJ9.B-hOiYz3og6Lz29q7msMvQ',
                 filter: (layer) => {
                     return layer.id === 'building';
                 },
@@ -99,10 +99,10 @@
             var buildingsLayer = new itowns.FeatureGeometryLayer('VTBuilding',{
                 batchId: function (property, featureId) { return featureId; },
                 source: buildingsSource,
-                zoom: {
-                    min: 15,
-                    // max: 13,
-                },
+                // zoom: {
+                //     min: 15,
+                //     max: 22,
+                // },
                 style: {
                     fill: {
                         base_altitude: (p, c) => {
