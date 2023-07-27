@@ -32,13 +32,15 @@ export default {
         const extentsDestination = node.getExtentsByProjection(layer.source.crs) || [node.extent];
 
         const zoomDest = extentsDestination[0].zoom;
+        console.log('zoomDest', zoomDest, layer.source.layers);
 
         // check if it's tile level is equal to display level layer.
-        // TO DO updata at all level asked
-        // if ((zoomDest < layer.zoom.min && zoomDest > layer.zoom.max) ||
-        if (zoomDest > layer.zoom.max ||
-            zoomDest < layer.zoom.min ||
-            // zoomDest != layer.zoom.min ||
+        // if (zoomDest > layer.zoom.max ||
+        //     zoomDest < layer.zoom.min ||
+        // if (zoomDest != layer.zoom.min ||
+        // // check if there's data in extent tile.
+        // !this.source.extentInsideLimit(node.extent, zoomDest) ||
+        if (
         // check if there's data in extent tile.
             !this.source.extentInsideLimit(node.extent, zoomDest) ||
         // In FileSource case, check if the feature center is in extent tile.

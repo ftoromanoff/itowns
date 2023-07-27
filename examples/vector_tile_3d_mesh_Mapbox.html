@@ -73,6 +73,10 @@
             const ortho = itowns.Fetcher.json('./layers/JSONLayers/Ortho.json')
                 .then(function _(config) {
                     config.source = new itowns.WMTSSource(config.source);
+                    // config.zoom = {
+                    //     min: 15,
+                    //     max: 18,
+                    // }
                     var layer = new itowns.ColorLayer('Ortho', config);
                     return view.addLayer(layer);
                 });
@@ -99,10 +103,10 @@
             var buildingsLayer = new itowns.FeatureGeometryLayer('VTBuilding',{
                 batchId: function (property, featureId) { return featureId; },
                 source: buildingsSource,
-                // zoom: {
-                //     min: 15,
-                //     max: 22,
-                // },
+                zoom: {
+                    min: 13,
+                    max: 15,
+                },
                 style: {
                     fill: {
                         base_altitude: (p, c) => {
