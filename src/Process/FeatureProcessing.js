@@ -36,7 +36,9 @@ export default {
         // check if it's tile level is equal to display level layer.
         // TO DO updata at all level asked
         // if ((zoomDest < layer.zoom.min && zoomDest > layer.zoom.max) ||
-        if (zoomDest != layer.zoom.min ||
+        if (zoomDest > layer.zoom.max ||
+            zoomDest < layer.zoom.min ||
+            // zoomDest != layer.zoom.min ||
         // check if there's data in extent tile.
             !this.source.extentInsideLimit(node.extent, zoomDest) ||
         // In FileSource case, check if the feature center is in extent tile.
