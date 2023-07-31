@@ -554,6 +554,13 @@ function featureToMesh(feature, options) {
         return;
     }
 
+    /*
+    // Calculate z et associé
+    ForEachGeom
+      -> pushCoordinates
+
+     */
+
     let mesh;
     switch (feature.type) {
         case FEATURE_TYPES.POINT:

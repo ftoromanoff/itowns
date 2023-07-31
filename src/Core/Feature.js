@@ -86,6 +86,14 @@ export class FeatureGeometry {
             max: -Infinity,
         };
     }
+
+    resetExtent(feature) {
+        if (feature.extent) {
+            this.extent = defaultExtent(feature.extent.crs);
+            this.#currentExtent = defaultExtent(feature.extent.crs);
+        }
+    }
+
     /**
      * Add a new marker to indicate the starting of sub geometry and extends the vertices buffer.
      * Then you have to push new the coordinates of sub geometry.
@@ -151,6 +159,10 @@ export class FeatureGeometry {
         if (this.#currentExtent) {
             this.#currentExtent.expandByCoordinates(feature.useCrsOut ? coordOut : coordIn);
         }
+    }
+
+    getCurrentExtend() {
+        return this.#currentExtent;
     }
 
     /**

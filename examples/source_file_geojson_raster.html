@@ -54,7 +54,7 @@
                 view.addLayer(layer).then(menuGlobe.addLayerGUI.bind(menuGlobe));
             }
             itowns.Fetcher.json('./layers/JSONLayers/IGN_MNT_HIGHRES.json').then(addElevationLayerFromConfig);
-            itowns.Fetcher.json('./layers/JSONLayers/WORLD_DTM.json').then(addElevationLayerFromConfig);
+            // itowns.Fetcher.json('./layers/JSONLayers/WORLD_DTM.json').then(addElevationLayerFromConfig);
 
 
             // Display the content of two GeoJSON files on terrain with ColorLayer and FileSource.
@@ -111,8 +111,8 @@
 
             // Center the camera on the data extents
             view.addEventListener(itowns.GLOBE_VIEW_EVENTS.GLOBE_INITIALIZED, function () {
-                const layersExtent = ariegeSource.extent.clone();
-                layersExtent.union(pyoSource.extent);
+                const layersExtent = pyoLayer.extent.clone();
+                layersExtent.union(ariegeLayer.extent);
                 view.controls.lookAtCoordinate(layersExtent, false);
             });
 

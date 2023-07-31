@@ -101,11 +101,34 @@ function drawPoint(ctx, x, y, style = {}, invCtxScale) {
 }
 
 const coord = new Coordinates('EPSG:4326', 0, 0, 0);
+const coord2 = new Coordinates('EPSG:4978', 0, 0, 0);
 
+let collectionNeedsUpdate = false;
 function drawFeature(ctx, feature, extent, style, invCtxScale) {
     const extentDim = extent.planarDimensions();
     const scaleRadius = extentDim.x / ctx.canvas.width;
     const globals = { zoom: extent.zoom };
+    feature._pos = 0;
+
+    for (const geometry of feature.geometries) {
+        if (!geometry.converted) {
+            coord2.crs = feature.crs;
+            geometry.resetExtent(feature);
+            for (const indice of geometry.indices) {
+                const offset = indice.offset * feature.size;
+                const count = offset + indice.count * feature.size;
+                for (let j = offset; j < count; j += feature.size) {
+                    coord2.setFromValues(feature.vertices[j], feature.vertices[j + 1], feature.vertices[j + 2]);
+                    geometry.pushCoordinates(coord2, feature);
+                }
+                indice.extent = geometry.getCurrentExtend();
+                geometry.updateExtent();
+            }
+            geometry.converted = true;
+            feature.updateExtent(geometry);
+            collectionNeedsUpdate = true;
+        }
+    }
 
     for (const geometry of feature.geometries) {
         if (Extent.intersectsExtent(geometry.extent, extent)) {
@@ -153,7 +176,7 @@ export default {
     // with, given there is no feature passed in parameter
     createTextureFromFeature(collection, extent, sizeTexture, style = {}, backgroundColor) {
         let texture;
-
+        console.log('createTextureFromFeature');
         if (collection) {
             // A texture is instancied drawn canvas
             // origin and dimension are used to transform the feature's coordinates to canvas's space
@@ -201,6 +224,10 @@ export default {
             // Draw the canvas
             for (const feature of collection.features) {
                 drawFeature(ctx, feature, featureExtent, feature.style || style, invCtxScale);
+            }
+            if (collectionNeedsUpdate) {
+                collection.updateExtent();
+                collectionNeedsUpdate = false;
             }
 
             texture = new THREE.CanvasTexture(c);

@@ -31,6 +31,12 @@ export default {
             texture = Feature2Texture.createTextureFromFeature(data, extentTexture, 256, layer.style, backgroundColor);
             texture.features = data;
             texture.extent = extentDestination;
+
+            // limite le passage ici..
+            layer.extent = data.extent.clone();
+            if (layer.extent.crs == data.crs) {
+                layer.extent.applyMatrix4(data.matrixWorld);
+            }
         } else if (data.isTexture) {
             texture = data;
         } else {

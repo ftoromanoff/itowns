@@ -42,9 +42,10 @@ const toFeature = {
         // or list of triplet [[x1, y1, z1], [x2, y2, z2], ..., [xn, yn, zn]]
         for (const triplet of coordinates) {
             coord.setFromValues(triplet[0], triplet[1], triplet[2]);
-            geometry.pushCoordinates(coord, feature);
+            // geometry.pushCoordinates(coord, feature);
+            feature._pushValues(coord.x, coord.y);
         }
-        geometry.updateExtent();
+        // geometry.updateExtent();
     },
     // compute clockwise polygon
     populateGeometryWithCCW(crsIn, coordinates, geometry, feature) {
@@ -58,11 +59,12 @@ const toFeature = {
             coord.setFromValues(coordinates[i][0], coordinates[i][1], coordinates[i][2]);
             sum += (last.x - coord.x) * (last.y + coord.y);
             last.copy(coord);
-            geometry.pushCoordinates(coord, feature);
+            // geometry.pushCoordinates(coord, feature);
+            feature._pushValues(coord.x, coord.y);
         }
         sum += (last.x - first.x) * (last.y + first.y);
         geometry.getLastSubGeometry().ccw = sum < 0;
-        geometry.updateExtent();
+        // geometry.updateExtent();
     },
     point(feature, crsIn, coordsIn, collection, properties) {
         this.default(feature, crsIn, [coordsIn], collection, properties);
@@ -76,7 +78,7 @@ const toFeature = {
         geometry.properties = properties;
         geometry.properties.style = new Style({}, feature.style).setFromGeojsonProperties(properties, feature.type);
         this.populateGeometry(crsIn, coordsIn, geometry, feature);
-        feature.updateExtent(geometry);
+        // feature.updateExtent(geometry);
     },
     polygon(feature, crsIn, coordsIn, collection, properties) {
         // filtering
@@ -91,7 +93,7 @@ const toFeature = {
         for (let i = 0; i < coordsIn.length; i++) {
             this.populateGeometryWithCCW(crsIn, coordsIn[i], geometry, feature);
         }
-        feature.updateExtent(geometry);
+        // feature.updateExtent(geometry);
     },
     multi(type, feature, crsIn, coordsIn, collection, properties) {
         for (const coords of coordsIn) {
@@ -183,7 +185,7 @@ function jsonFeaturesToFeatures(crsIn, jsonFeatures, options) {
     }
 
     collection.removeEmptyFeature();
-    collection.updateExtent();
+    // collection.updateExtent();
 
     return collection;
 }
