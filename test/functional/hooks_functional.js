@@ -79,10 +79,10 @@ function waitServerReady(port) {
 }
 
 const layersInitialization = async (forceTimeOut = false) => {
-    await page.waitForFunction(forceTimeOut => (view.mainLoop.scheduler.commandsWaitingExecutionCount() === 0
+    await page.waitForFunction(timingOut => (view.mainLoop.scheduler.commandsWaitingExecutionCount() === 0
             && view.mainLoop.renderingState === 0
             && view.getLayers().every(layer => layer.ready)
-            && !forceTimeOut), { timeout: 50000 }, forceTimeOut);
+            && !timingOut), { timeout: 50000 }, forceTimeOut);
 };
 
 const waitNextRender = async page => page.evaluate(() => new Promise((resolve) => {
@@ -105,18 +105,32 @@ const waitNextRender = async page => page.evaluate(() => new Promise((resolve) =
     view.notifyChange();
 }));
 
+async function saveInitialPosition() {
+    global.initialPosition = await page.evaluate(() => {
+        let promise;
+        if (view.isGlobeView && view.controls) {
+            promise = Promise.resolve(itowns.CameraUtils.getTransformCameraLookingAtTarget(view, view.controls.camera));
+        } else if (view.isPlanarView) {
+            // TODO: make the controls accessible from PlanarView before doing
+            // anything more here
+            promise = Promise.resolve();
+        }
+        return promise;
+    });
+}
+
 // Helper function: returns true if there are no errors on the page
 // and when all layers are ready and rendering has been done
 const loadExample = async (url, screenshotName) => {
-    url = `http://localhost:${itownsPort}/${url}`;
+    localUrl = `http://localhost:${itownsPort}/${url}`;
 
     const pageErrors = [];
     page.on('pageerror', (e) => { pageErrors.push(e); });
 
     try {
-        await page.goto(url);
+        await page.goto(localUrl);
     } catch (e) {
-        throw new Error(`page ${url} couldn't load`, { cause: e });
+        throw new Error(`page ${localUrl} couldn't load`, { cause: e });
     }
 
     if (pageErrors.length > 0) {
@@ -132,8 +146,8 @@ const loadExample = async (url, screenshotName) => {
 
     try {
         await layersInitialization();
-    } catch (e) {
-        if (e instanceof Error && e.name === 'TimeoutError') {
+    } catch (err) {
+        if (err instanceof Error && err.name === 'TimeoutError') {
             console.warn('      *** Warning: layersInitialization timed out -> it got stopped ***');
             await page.evaluate(() => {
                 itowns.CameraUtils.stop(view, view.camera3D);
@@ -159,18 +173,6 @@ const loadExample = async (url, screenshotName) => {
 
     return true;
 };
-
-async function saveInitialPosition() {
-    global.initialPosition = await page.evaluate(() => {
-        if (view.isGlobeView && view.controls) {
-            return Promise.resolve(itowns.CameraUtils.getTransformCameraLookingAtTarget(view, view.controls.camera));
-        } else if (view.isPlanarView) {
-            // TODO: make the controls accessible from PlanarView before doing
-            // anything more here
-            return Promise.resolve();
-        }
-    });
-}
 
 // Use waitUntilItownsIsIdle to wait until itowns has finished all its work (= layer updates)
 const waitUntilItownsIsIdle = async (screenshotName) => {
@@ -251,7 +253,7 @@ exports.mochaHooks = {
     // reset browser state instead of closing it
     afterEach: async () => {
         await page.evaluate((init) => {
-            if (view?.isGlobeView && view.controls) {
+            if (view && view.isGlobeView && view.controls) {
                 // eslint-disable-next-line no-param-reassign
                 init.coord = new itowns.Coordinates(
                     init.coord.crs,
@@ -261,7 +263,7 @@ exports.mochaHooks = {
                 );
                 view.controls.lookAtCoordinate(init, false);
                 view.notifyChange();
-            } else if (view?.isPlanarView) {
+            } else if (view && view.isPlanarView) {
                 // TODO: make the controls accessible from PlanarView before doing
                 // anything more here
             }
@@ -273,5 +275,3 @@ exports.mochaHooks = {
 
 global.loadExample = loadExample;
 global.waitUntilItownsIsIdle = waitUntilItownsIsIdle;
-
-
