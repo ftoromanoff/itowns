@@ -41,6 +41,12 @@ export function readExpression(property, ctx) {
             }
             return property.stops[0][1];
         } else if (property instanceof Function) {
+            // console.log(property);
+            // console.log(ctx);
+            // console.log(ctx.properties);
+            // console.log(ctx.type);
+            // if (ctx.properties) { return property(ctx.properties()); }
+            // if (ctx.type) { return property(ctx.properties(), ctx.type()); }
             return property(ctx.properties(), ctx);
         } else {
             return property;

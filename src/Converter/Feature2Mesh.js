@@ -11,7 +11,7 @@ import Style from '../Core/Style';
 
 const coord = new Coordinates('EPSG:4326', 0, 0, 0);
 
-class FeatureContext {
+export class FeatureContext {
     #worldCoord = new Coordinates('EPSG:4326', 0, 0, 0);
     #localCoordinates = new Coordinates('EPSG:4326', 0, 0, 0);
     #feature = {};
@@ -44,7 +44,7 @@ class FeatureContext {
         return this.#geometry.properties;
     }
 
-    type() {
+    get type() {
         return this.#feature.type;
     }
 

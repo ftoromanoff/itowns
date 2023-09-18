@@ -8,6 +8,9 @@ import Label from 'Core/Label';
 import { FEATURE_TYPES } from 'Core/Feature';
 import Style, { readExpression } from 'Core/Style';
 import { ScreenGrid } from 'Renderer/Label2DRenderer';
+import { FeatureContext } from 'Converter/Feature2Mesh';
+
+const context = new FeatureContext();
 
 const coord = new Coordinates('EPSG:4326', 0, 0, 0);
 
@@ -241,22 +244,27 @@ class LabelLayer extends GeometryLayer {
         // Converting the extent now is faster for further operation
         extent.as(data.crs, _extent);
         coord.crs = data.crs;
-        const globals = {
+        // const globals = {
+        //     icon: true,
+        //     text: true,
+        //     zoom: extent.zoom,
+        // };
+        context.globals = {
             icon: true,
             text: true,
             zoom: extent.zoom,
         };
-
         data.features.forEach((f) => {
             // TODO: add support for LINE and POLYGON
             if (f.type !== FEATURE_TYPES.POINT) {
                 return;
             }
+            context.setFeature(f);
 
             const featureField = f.style?.text?.field;
 
             // determine if altitude style is specified by the user
-            const altitudeStyle = f.style.point.base_altitude;
+            const altitudeStyle = f.style?.point?.base_altitude;
             const isDefaultElevationStyle = altitudeStyle instanceof Function && altitudeStyle.name == 'base_altitudeDefault';
 
             // determine if the altitude needs update with ElevationLayer
@@ -273,7 +281,8 @@ class LabelLayer extends GeometryLayer {
 
                 const geometryField = g.properties.style && g.properties.style.text && g.properties.style.text.field;
                 let content;
-                const context = { globals, specifics: { properties: () => g.properties, type: () => f.type } };
+                context.setGeometry(g);
+                // const context = { globals, specifics: { properties: () => g.properties, type: () => f.type } };
                 if (this.labelDomelement) {
                     content = readExpression(this.labelDomelement, context);
                 } else if (!geometryField && !featureField && !layerField) {
