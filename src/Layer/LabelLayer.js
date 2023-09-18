@@ -242,6 +242,7 @@ class LabelLayer extends GeometryLayer {
         // Converting the extent now is faster for further operation
         extent.as(data.crs, _extent);
         coord.crs = data.crs;
+
         context.globals = {
             icon: true,
             text: true,
