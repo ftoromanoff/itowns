@@ -108,7 +108,13 @@ const coord = new Coordinates('EPSG:4326', 0, 0, 0);
 function drawFeature(ctx, feature, extent, style, invCtxScale) {
     const extentDim = extent.planarDimensions();
     const scaleRadius = extentDim.x / ctx.canvas.width;
-    context.globals = { zoom: extent.zoom };
+
+    context.globals = {
+        fill: true,
+        stroke: true,
+        point: true,
+        zoom: extent.zoom,
+    };
 
     for (const geometry of feature.geometries) {
         if (Extent.intersectsExtent(geometry.extent, extent)) {
