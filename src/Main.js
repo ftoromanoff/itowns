@@ -38,7 +38,7 @@ export { default as Capabilities } from 'Core/System/Capabilities';
 export { CAMERA_TYPE } from 'Renderer/Camera';
 
 // Internal itowns format
-export { default as Feature, FeatureCollection, FeatureGeometry, FEATURE_TYPES } from 'Core/Feature';
+export { default as Feature, FeatureCollection, FeatureGeometry, FeatureContext, FEATURE_TYPES } from 'Core/Feature';
 export { default as Style } from 'Core/Style';
 export { default as Label } from 'Core/Label';
 

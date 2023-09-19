@@ -1,9 +1,8 @@
 import * as THREE from 'three';
-import { FEATURE_TYPES } from 'Core/Feature';
+import { FEATURE_TYPES, FeatureContext } from 'Core/Feature';
 import Extent from 'Core/Geographic/Extent';
 import Coordinates from 'Core/Geographic/Coordinates';
 import Style from 'Core/Style';
-import { FeatureContext } from 'Converter/Feature2Mesh';
 
 const context = new FeatureContext();
 

@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 import * as THREE from 'three';
 import Extent from 'Core/Geographic/Extent';
 import Coordinates from 'Core/Geographic/Coordinates';
@@ -29,6 +30,59 @@ export const FEATURE_TYPES = {
     LINE: 1,
     POLYGON: 2,
 };
+
+export class FeatureContext {
+    #worldCoord = new Coordinates('EPSG:4326', 0, 0, 0);
+    #localCoordinates = new Coordinates('EPSG:4326', 0, 0, 0);
+    #feature = {};
+    #geometry = {};
+    #collection = {};
+
+    constructor() {
+        this.globals = {};
+    }
+
+    setFeature(f) {
+        this.#feature = f;
+    }
+
+    setGeometry(g) {
+        this.#geometry = g;
+    }
+
+    setCollection(c) {
+        this.#collection = c;
+        this.#localCoordinates.setCrs(c.crs);
+    }
+
+    setLocalCoordinatesFromArray(vertices, offset) {
+        this.#worldCoord.isLocal = true;
+        return this.#localCoordinates.setFromArray(vertices, offset);
+    }
+
+    properties() {
+        return this.#geometry.properties;
+    }
+
+    get type() {
+        return this.#feature.type;
+    }
+
+    get localCoordinates() {
+        return this.#localCoordinates;
+    }
+
+    get coordinates() {
+        if (this.#worldCoord.isLocal) {
+            this.#worldCoord.isLocal = false;
+            this.#worldCoord.copy(this.#localCoordinates).applyMatrix4(this.#collection.matrixWorld);
+            if (this.#localCoordinates.crs == 'EPSG:4978') {
+                return this.#worldCoord.as('EPSG:4326', this.#worldCoord);
+            }
+        }
+        return this.#worldCoord;
+    }
+}
 
 /**
  * @property {string} crs - The CRS to convert the input coordinates to.

@@ -5,10 +5,9 @@ import GeometryLayer from 'Layer/GeometryLayer';
 import Coordinates from 'Core/Geographic/Coordinates';
 import Extent from 'Core/Geographic/Extent';
 import Label from 'Core/Label';
-import { FEATURE_TYPES } from 'Core/Feature';
+import { FEATURE_TYPES, FeatureContext } from 'Core/Feature';
 import Style, { readExpression } from 'Core/Style';
 import { ScreenGrid } from 'Renderer/Label2DRenderer';
-import { FeatureContext } from 'Converter/Feature2Mesh';
 
 const context = new FeatureContext();
 

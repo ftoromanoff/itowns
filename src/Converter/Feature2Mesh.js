@@ -1,69 +1,15 @@
 import * as THREE from 'three';
 import Earcut from 'earcut';
-import { FEATURE_TYPES } from 'Core/Feature';
+import { FEATURE_TYPES, FeatureContext } from 'Core/Feature';
 import ReferLayerProperties from 'Layer/ReferencingLayerProperties';
 import { deprecatedFeature2MeshOptions } from 'Core/Deprecated/Undeprecator';
 import Extent from 'Core/Geographic/Extent';
 import Crs from 'Core/Geographic/Crs';
 import OrientationUtils from 'Utils/OrientationUtils';
 import Coordinates from 'Core/Geographic/Coordinates';
-import Style from '../Core/Style';
+import Style from 'Core/Style';
 
 const coord = new Coordinates('EPSG:4326', 0, 0, 0);
-
-export class FeatureContext {
-    #worldCoord = new Coordinates('EPSG:4326', 0, 0, 0);
-    #localCoordinates = new Coordinates('EPSG:4326', 0, 0, 0);
-    #feature = {};
-    #geometry = {};
-    #collection = {};
-
-    constructor() {
-        this.globals = {};
-    }
-
-    setFeature(f) {
-        this.#feature = f;
-    }
-
-    setGeometry(g) {
-        this.#geometry = g;
-    }
-
-    setCollection(c) {
-        this.#collection = c;
-        this.#localCoordinates.setCrs(c.crs);
-    }
-
-    setLocalCoordinatesFromArray(vertices, offset) {
-        this.#worldCoord.isLocal = true;
-        return this.#localCoordinates.setFromArray(vertices, offset);
-    }
-
-    properties() {
-        return this.#geometry.properties;
-    }
-
-    get type() {
-        return this.#feature.type;
-    }
-
-    get localCoordinates() {
-        return this.#localCoordinates;
-    }
-
-    get coordinates() {
-        if (this.#worldCoord.isLocal) {
-            this.#worldCoord.isLocal = false;
-            this.#worldCoord.copy(this.#localCoordinates).applyMatrix4(this.#collection.matrixWorld);
-            if (this.#localCoordinates.crs == 'EPSG:4978') {
-                return this.#worldCoord.as('EPSG:4326', this.#worldCoord);
-            }
-        }
-        return this.#worldCoord;
-    }
-}
-
 const context = new FeatureContext();
 
 const dim_ref = new THREE.Vector2();
