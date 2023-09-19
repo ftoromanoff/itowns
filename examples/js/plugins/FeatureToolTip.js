@@ -64,14 +64,7 @@ const FeatureToolTip = (function _() {
         }
     }
 
-    function getGeometryProperties(geometry) {
-        return function properties() { return geometry.properties; };
-    }
-
-    function getFeatureType(feature) {
-        return function type() { return feature.type; };
-    }
-
+    const context = new itowns.FeatureContext();
     function fillToolTip(features, layer, options) {
         let content = '';
         let feature;
@@ -86,13 +79,14 @@ const FeatureToolTip = (function _() {
             feature = features[p];
             geometry = feature.geometry;
 
-            const globals = {
+            context.globals = {
                 fill: true,
                 stroke: true,
                 point: true,
                 icon: true,
             };
-            const context = { globals, specifics: { properties: getGeometryProperties(geometry), type: getFeatureType(feature) } };
+            context.setFeature(feature);
+            context.setGeometry(geometry);
 
             style = itowns.Style.merge(layer.style, feature.style, context).drawingStylefromContext(context);
 
