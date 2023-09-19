@@ -7,54 +7,10 @@ import Extent from 'Core/Geographic/Extent';
 import Crs from 'Core/Geographic/Crs';
 import OrientationUtils from 'Utils/OrientationUtils';
 import Coordinates from 'Core/Geographic/Coordinates';
+import { StyleContext } from 'Core/Style';
 
 const coord = new Coordinates('EPSG:4326', 0, 0, 0);
-
-export class FeatureContext {
-    #worldCoord = new Coordinates('EPSG:4326', 0, 0, 0);
-    #localCoordinates = new Coordinates('EPSG:4326', 0, 0, 0);
-    #geometry = {};
-    #collection = {};
-
-    constructor() {
-        this.globals = {};
-    }
-
-    setGeometry(g) {
-        this.#geometry = g;
-    }
-
-    setCollection(c) {
-        this.#collection = c;
-        this.#localCoordinates.setCrs(c.crs);
-    }
-
-    setLocalCoordinatesFromArray(vertices, offset) {
-        this.#worldCoord.isLocal = true;
-        return this.#localCoordinates.setFromArray(vertices, offset);
-    }
-
-    properties() {
-        return this.#geometry.properties;
-    }
-
-    get localCoordinates() {
-        return this.#localCoordinates;
-    }
-
-    get coordinates() {
-        if (this.#worldCoord.isLocal) {
-            this.#worldCoord.isLocal = false;
-            this.#worldCoord.copy(this.#localCoordinates).applyMatrix4(this.#collection.matrixWorld);
-            if (this.#localCoordinates.crs == 'EPSG:4978') {
-                return this.#worldCoord.as('EPSG:4326', this.#worldCoord);
-            }
-        }
-        return this.#worldCoord;
-    }
-}
-
-const context = new FeatureContext();
+const context = new StyleContext();
 
 const dim_ref = new THREE.Vector2();
 const dim = new THREE.Vector2();

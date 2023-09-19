@@ -39,7 +39,7 @@ export { CAMERA_TYPE } from 'Renderer/Camera';
 
 // Internal itowns format
 export { default as Feature, FeatureCollection, FeatureGeometry, FEATURE_TYPES } from 'Core/Feature';
-export { default as Style } from 'Core/Style';
+export { default as Style, StyleContext } from 'Core/Style';
 export { default as Label } from 'Core/Label';
 
 // Layers provided by default in iTowns

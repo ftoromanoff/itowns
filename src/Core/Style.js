@@ -4,6 +4,7 @@ import Fetcher from 'Provider/Fetcher';
 import * as mapbox from '@mapbox/mapbox-gl-style-spec';
 import { Color } from 'three';
 import { deltaE } from 'Renderer/Color';
+import Coordinates from 'Core/Geographic/Coordinates';
 
 import itowns_stroke_single_before from './StyleChunk/itowns_stroke_single_before.css';
 
@@ -152,6 +153,59 @@ function defineStyleProperty(style, category, name, value, defaultValue) {
         });
 
     style[category][name] = value;
+}
+
+export class StyleContext {
+    #worldCoord = new Coordinates('EPSG:4326', 0, 0, 0);
+    #localCoordinates = new Coordinates('EPSG:4326', 0, 0, 0);
+    #feature = {};
+    #geometry = {};
+    #collection = {};
+
+    constructor() {
+        this.globals = {};
+    }
+
+    setFeature(f) {
+        this.#feature = f;
+    }
+
+    setGeometry(g) {
+        this.#geometry = g;
+    }
+
+    setCollection(c) {
+        this.#collection = c;
+        this.#localCoordinates.setCrs(c.crs);
+    }
+
+    setLocalCoordinatesFromArray(vertices, offset) {
+        this.#worldCoord.isLocal = true;
+        return this.#localCoordinates.setFromArray(vertices, offset);
+    }
+
+    properties() {
+        return this.#geometry.properties;
+    }
+
+    get type() {
+        return this.#feature.type;
+    }
+
+    get localCoordinates() {
+        return this.#localCoordinates;
+    }
+
+    get coordinates() {
+        if (this.#worldCoord.isLocal) {
+            this.#worldCoord.isLocal = false;
+            this.#worldCoord.copy(this.#localCoordinates).applyMatrix4(this.#collection.matrixWorld);
+            if (this.#localCoordinates.crs == 'EPSG:4978') {
+                return this.#worldCoord.as('EPSG:4326', this.#worldCoord);
+            }
+        }
+        return this.#worldCoord;
+    }
 }
 
 /**
@@ -560,7 +614,8 @@ class Style {
      * Map drawing properties style (fill, stroke, point, text and icon) from context to object.
      * Only the necessary properties are mapped to object.
      * if a property is expression, the mapped value will be the expression result depending on context.
-     * @param      {Object}  context  The context
+     * @param      {StyleContext}  context  The context linked to the feature
+     *
      * @return     {Style}  mapped style depending on context.
      */
     drawingStylefromContext(context) {
