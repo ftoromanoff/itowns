@@ -535,7 +535,7 @@ function createInstancedMesh(mesh, count, ptsIn) {
 function pointsToInstancedMeshes(feature, options) {
     const ptsIn = feature.vertices;
     const count = feature.geometries.length;
-    const modelObject = options.layer.style.point.model.object;
+    const modelObject = options.style.point.model.object;
 
     if (modelObject instanceof THREE.Mesh) {
         return createInstancedMesh(modelObject, count, ptsIn);
@@ -565,7 +565,7 @@ function featureToMesh(feature, options) {
     let mesh;
     switch (feature.type) {
         case FEATURE_TYPES.POINT:
-            if (options.layer?.style?.point?.model?.object) {
+            if (options.style?.point?.model?.object) {
                 try {
                     mesh = pointsToInstancedMeshes(feature, options);
                     mesh.isInstancedMesh = true;
@@ -580,7 +580,7 @@ function featureToMesh(feature, options) {
             mesh = featureToLine(feature, options);
             break;
         case FEATURE_TYPES.POLYGON:
-            if (options.layer?.style?.fill.extrusion_height) {
+            if (options.style?.fill.extrusion_height) {
                 mesh = featureToExtrudedPolygon(feature, options);
             } else {
                 mesh = featureToPolygon(feature, options);
@@ -594,10 +594,6 @@ function featureToMesh(feature, options) {
         mesh.material.color = new THREE.Color(0xffffff);
     }
     mesh.feature = feature;
-
-    if (options.layer) {
-        mesh.layer = options.layer;
-    }
 
     return mesh;
 }
@@ -650,21 +646,24 @@ export default {
                 options.pointMaterial = ReferLayerProperties(new THREE.PointsMaterial(), this);
                 options.lineMaterial = ReferLayerProperties(new THREE.LineBasicMaterial(), this);
                 options.polygonMaterial = ReferLayerProperties(new THREE.MeshBasicMaterial(), this);
-                // options.layer.style will be used later on to define the final style.
-                // In the case we didn't instanciate the layer before the convert, we can directly
+                // In the case we didn't instanciate the layer (this) before the convert, we can directly
                 // pass a style using options.style.
                 // This is usually done in some tests and if you want to use Feature2Mesh.convert()
                 // as in examples/source_file_gpx_3d.html.
-                options.layer = this || { style: options.style };
+                options.style = options.style || (this ? this.style : undefined);
             }
-            context.layerStyle = options.layer.style;
+            context.layerStyle = options.style;
 
             context.setCollection(collection);
 
             const features = collection.features;
             if (!features || features.length == 0) { return; }
 
-            const meshes = features.map(feature => featureToMesh(feature, options));
+            const meshes = features.map((feature) => {
+                const mesh = featureToMesh(feature, options);
+                mesh.layer = this;
+                return mesh;
+            });
             const featureNode = new FeatureMesh(meshes, collection);
 
             return featureNode;
