@@ -10,7 +10,7 @@ import Coordinates from 'Core/Geographic/Coordinates';
 
 const coord = new Coordinates('EPSG:4326', 0, 0, 0);
 
-class FeatureContext {
+export class FeatureContext {
     #worldCoord = new Coordinates('EPSG:4326', 0, 0, 0);
     #localCoordinates = new Coordinates('EPSG:4326', 0, 0, 0);
     #geometry = {};

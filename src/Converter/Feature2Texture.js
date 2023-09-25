@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { FEATURE_TYPES } from 'Core/Feature';
 import Extent from 'Core/Geographic/Extent';
 import Coordinates from 'Core/Geographic/Coordinates';
+import { FeatureContext } from 'Converter/Feature2Mesh';
+
+const context = new FeatureContext();
 
 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 const matrix = svg.createSVGMatrix();
@@ -105,11 +108,11 @@ const coord = new Coordinates('EPSG:4326', 0, 0, 0);
 function drawFeature(ctx, feature, extent, style, invCtxScale) {
     const extentDim = extent.planarDimensions();
     const scaleRadius = extentDim.x / ctx.canvas.width;
-    const globals = { zoom: extent.zoom };
+    context.globals = { zoom: extent.zoom };
 
     for (const geometry of feature.geometries) {
         if (Extent.intersectsExtent(geometry.extent, extent)) {
-            const context = { globals, properties: () => geometry.properties };
+            context.setGeometry(geometry);
             const contextStyle = (geometry.properties.style || style).drawingStylefromContext(context);
 
             if (contextStyle) {
