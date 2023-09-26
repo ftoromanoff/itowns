@@ -50,21 +50,22 @@ describe('Label', function () {
     let label;
     let style;
     const c = new Coordinates('EPSG:4326');
+    const layerVT = {
+        type: 'symbol',
+        paint: {},
+        layout: {
+            'icon-image': 'icon',
+            'icon-size': 1,
+            'text-field': 'label',
+        },
+    };
     const sprites = {
         img: '',
         icon: { x: 0, y: 0, width: 10, height: 10 },
     };
 
     before('init style', function () {
-        style = new Style();
-        style.setFromVectorTileLayer({
-            type: 'symbol',
-            paint: {},
-            layout: {
-                'icon-image': 'icon',
-                'icon-size': 1,
-            },
-        }, sprites);
+        style = new Style(Style.setFromVectorTileLayer(layerVT, sprites));
     });
 
     it('should throw errors for bad Label construction', function () {
@@ -72,9 +73,14 @@ describe('Label', function () {
         assert.throws(() => { label = new Label('content'); });
     });
 
-    it('should correctly create Labels', function () {
-        assert.doesNotThrow(() => { label = new Label('', c); });
-        assert.doesNotThrow(() => { label = new Label(document.createElement('div'), c); });
+    describe('should correctly create Labels', function () {
+        it('with label from style', function () {
+            assert.doesNotThrow(() => { label = new Label('', c, style); });
+            assert.equal(label.content.textContent, layerVT.layout['text-field']);
+        });
+        it('from a DomElement', function () {
+            assert.doesNotThrow(() => { label = new Label(document.createElement('div'), c); });
+        });
     });
 
     it('should set the correct icon anchor position', function () {
