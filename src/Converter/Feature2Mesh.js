@@ -14,7 +14,6 @@ class FeatureContext {
     #worldCoord = new Coordinates('EPSG:4326', 0, 0, 0);
     #localCoordinates = new Coordinates('EPSG:4326', 0, 0, 0);
     #geometry = {};
-    #collection = {};
 
     constructor() {
         this.globals = {};
@@ -25,7 +24,7 @@ class FeatureContext {
     }
 
     setCollection(c) {
-        this.#collection = c;
+        this.collection = c;
         this.#localCoordinates.setCrs(c.crs);
     }
 
@@ -38,14 +37,10 @@ class FeatureContext {
         return this.#geometry.properties;
     }
 
-    get localCoordinates() {
-        return this.#localCoordinates;
-    }
-
     get coordinates() {
         if (this.#worldCoord.isLocal) {
             this.#worldCoord.isLocal = false;
-            this.#worldCoord.copy(this.#localCoordinates).applyMatrix4(this.#collection.matrixWorld);
+            this.#worldCoord.copy(this.#localCoordinates).applyMatrix4(this.collection.matrixWorld);
             if (this.#localCoordinates.crs == 'EPSG:4978') {
                 return this.#worldCoord.as('EPSG:4326', this.#worldCoord);
             }
@@ -77,10 +72,13 @@ class FeatureMesh extends THREE.Group {
     #place = new THREE.Group();
     constructor(meshes, collection) {
         super();
+
         this.meshes = new THREE.Group().add(...meshes);
+
         this.#collection = new THREE.Group().add(this.meshes);
         this.#collection.quaternion.copy(collection.quaternion);
         this.#collection.position.copy(collection.position);
+        this.#collection.position.z = 0;
         this.#collection.scale.copy(collection.scale);
         this.#collection.updateMatrix();
 
@@ -218,11 +216,10 @@ function featureToPoint(feature, options) {
     const colors = new Uint8Array(ptsIn.length);
     const batchIds = new Uint32Array(ptsIn.length);
     const batchId = options.batchId || ((p, id) => id);
-    context.setCollection(options.collection);
 
     let featureId = 0;
     const vertices = new Float32Array(ptsIn);
-    inverseScale.setFromMatrixScale(options.collection.matrixWorldInverse);
+    inverseScale.setFromMatrixScale(context.collection.matrixWorldInverse);
     normal.set(0, 0, 1).multiply(inverseScale);
     context.globals = { point: true };
 
@@ -265,7 +262,6 @@ function featureToLine(feature, options) {
     const ptsIn = feature.vertices;
     const colors = new Uint8Array(ptsIn.length);
     const count = ptsIn.length / 3;
-    context.setCollection(options.collection);
 
     const batchIds = new Uint32Array(count);
     const batchId = options.batchId || ((p, id) => id);
@@ -283,7 +279,7 @@ function featureToLine(feature, options) {
     const indices = getIntArrayFromSize(countIndices, count);
 
     let i = 0;
-    inverseScale.setFromMatrixScale(options.collection.matrixWorldInverse);
+    inverseScale.setFromMatrixScale(context.collection.matrixWorldInverse);
     normal.set(0, 0, 1).multiply(inverseScale);
     // Multi line case
     for (const geometry of feature.geometries) {
@@ -339,10 +335,9 @@ function featureToPolygon(feature, options) {
 
     const batchIds = new Uint32Array(vertices.length / 3);
     const batchId = options.batchId || ((p, id) => id);
-    context.setCollection(options.collection);
     context.globals = { fill: true };
 
-    inverseScale.setFromMatrixScale(options.collection.matrixWorldInverse);
+    inverseScale.setFromMatrixScale(context.collection.matrixWorldInverse);
     normal.set(0, 0, 1).multiply(inverseScale);
     let featureId = 0;
 
@@ -425,14 +420,13 @@ function featureToExtrudedPolygon(feature, options) {
 
     const batchIds = new Uint32Array(vertices.length / 3);
     const batchId = options.batchId || ((p, id) => id);
-    context.setCollection(options.collection);
 
     let featureId = 0;
 
     context.globals = { fill: true };
-    inverseScale.setFromMatrixScale(options.collection.matrixWorldInverse);
+    inverseScale.setFromMatrixScale(context.collection.matrixWorldInverse);
     normal.set(0, 0, 1).multiply(inverseScale);
-    coord.setCrs(options.collection.crs);
+    coord.setCrs(context.collection.crs);
 
     for (const geometry of feature.geometries) {
         context.setGeometry(geometry);
@@ -609,7 +603,6 @@ function featureToMesh(feature, options) {
         mesh.material.color = new THREE.Color(0xffffff);
     }
     mesh.feature = feature;
-    mesh.position.z = -options.GlobalZTrans;
 
     if (options.layer) {
         mesh.layer = options.layer;
@@ -669,13 +662,11 @@ export default {
                 options.layer = this;
             }
 
-            options.collection = collection;
+            context.setCollection(collection);
 
             const features = collection.features;
 
             if (!features || features.length == 0) { return; }
-
-            options.GlobalZTrans = collection.center.z;
 
             const meshes = features.map(feature => featureToMesh(feature, options));
             const featureNode = new FeatureMesh(meshes, collection);

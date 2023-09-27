@@ -14,7 +14,7 @@ const canvas = (typeof document !== 'undefined') ? document.createElement('canva
 const style_properties = {};
 
 function base_altitudeDefault(properties, ctx) {
-    return ctx?.coordinates?.z || 0;
+    return ctx?.coordinates?.z || ctx?.collection?.center?.z || 0;
 }
 
 function mapPropertiesFromContext(mainKey, from, to, context) {
