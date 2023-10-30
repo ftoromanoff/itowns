@@ -424,7 +424,7 @@ export class FeatureCollection extends THREE.Object3D {
     /**
      * Updates the global transform of the object and its descendants.
      *
-     * @param {booolean}  force   The force
+     * @param {boolean}  force   The force
      */
     updateMatrixWorld(force) {
         super.updateMatrixWorld(force);

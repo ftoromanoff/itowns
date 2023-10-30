@@ -176,7 +176,7 @@ function defineStyleProperty(style, category, name, value, defaultValue) {
  * @property {Coordinates}      localCoordinates @private Coordinates object to store coordinates in local space.
  * @property {boolean}          worldCoordsComputed @private Have the world coordinates already been computed
  *                                  from the local coordinates?
- * @property {Feature}          feature  @private The itowns feature of interest. 
+ * @property {Feature}          feature  @private The itowns feature of interest.
  * @property {FeatureGeometry}  geometry  @private The FeatureGeometry to compute the style.
  */
 export class StyleContext {
