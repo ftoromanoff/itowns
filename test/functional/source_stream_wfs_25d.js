@@ -14,6 +14,7 @@ describe('source_stream_wfs_25d', function _() {
         // Test picking a feature geometry property from `wfsBuilding` layer.
         // Picking is done at the given screen coordinates.
         const buildingId = await page.evaluate(() => picking({ x: 97, y: 213 }));
+        console.log(buildingId);
         assert.equal(buildingId.geojson.id, 'batiment.BATIMENT0000000241634062');
     });
     it('should remove GeometryLayer', async () => {
