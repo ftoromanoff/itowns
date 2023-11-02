@@ -21,6 +21,14 @@ function baseAltitudeDefault(properties, ctx) {
     return ctx?.coordinates?.z || ctx?.collection?.center?.z || 0;
 }
 
+/**
+ * Map properties of 'mainKey' and sub properties
+ * @param {*} mainKey
+ * @param {*} from
+ * @param {*} to target
+ * @param {*} context
+ */
+
 function mapPropertiesFromContext(mainKey, from, to, context) {
     to[mainKey] = to[mainKey] || {};
     for (const key of style_properties[mainKey]) {
@@ -148,13 +156,11 @@ function defineStyleProperty(style, category, name, value, defaultValue) {
         name,
         {
             enumerable: true,
-            get: () => property ?? defaultValue,
+            get: () => property ?? value ?? defaultValue, // layer.property ?? feature.property ?? defaultValue
             set: (v) => {
                 property = v;
             },
         });
-
-    style[category][name] = value;
 }
 
 /**
@@ -696,7 +702,7 @@ class Style {
      *
      * @return {Style}  mapped style depending on context.
      */
-    static applyContext(context) {
+    static applyContext(context) { // getFromContext()
         const styleConc = new Style(context.style);
         const style = {};
         if (styleConc.fill.color || styleConc.fill.pattern || context.globals.fill) {
