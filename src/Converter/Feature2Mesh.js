@@ -7,7 +7,7 @@ import Extent from 'Core/Geographic/Extent';
 import Crs from 'Core/Geographic/Crs';
 import OrientationUtils from 'Utils/OrientationUtils';
 import Coordinates from 'Core/Geographic/Coordinates';
-import Style, Style2, { StyleContext } from 'Core/Style';
+import Style, { StyleContext } from 'Core/Style';
 
 const coord = new Coordinates('EPSG:4326', 0, 0, 0);
 const context = new StyleContext();
@@ -210,7 +210,6 @@ function featureToPoint(feature, options) {
 
             coord.copy(context.setLocalCoordinatesFromArray(feature.vertices, v));
             const style = Style.applyContext(context);
-            const style2 = new Style2(context);
             const { base_altitude, color, radius } = style.point;
             coord.z = 0;
 
