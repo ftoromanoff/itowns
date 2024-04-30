@@ -36,11 +36,6 @@ of the authors and should not be interpreted as representing official policies,
 import * as THREE from 'three';
 import PointCloudLayer from 'Layer/PointCloudLayer';
 import Potree2Node from 'Core/Potree2Node';
-import { Extent } from '@itowns/geographic';
-
-const bboxMesh = new THREE.Mesh();
-const box3 = new THREE.Box3();
-bboxMesh.geometry.boundingBox = box3;
 
 /**
  * @property {boolean} isPotreeLayer - Used to checkout whether this layer
@@ -87,8 +82,7 @@ class Potree2Layer extends PointCloudLayer {
         this.isPotreeLayer = true;
 
         const resolve = this.addInitializationStep();
-
-        this.source.whenReady.then((metadata) => {
+        this.whenReady = this.source.whenReady.then((metadata) => {
             this.scale = new THREE.Vector3(1, 1, 1);
             this.metadata = metadata;
 
@@ -98,27 +92,21 @@ class Potree2Layer extends PointCloudLayer {
                 this.material.defines[normal.name] = 1;
             }
 
-            const min = new THREE.Vector3(...metadata.boundingBox.min);
-            const max = new THREE.Vector3(...metadata.boundingBox.max);
-            const boundingBox = new THREE.Box3(min, max);
+            // currently the spec on potree2 only have boundingBox and no boundsConforming
+            this.zmin = metadata.boundingBox.min[2];
+            this.zmax = metadata.boundingBox.max[2];
+
+            this.setElevationRange();
 
             const root = new Potree2Node(0, 0, this.source);
-
-            root.bbox = boundingBox;
-            root.boundingSphere = boundingBox.getBoundingSphere(new THREE.Sphere());
-
-            this.minElevationRange = this.minElevationRange ?? metadata.boundingBox.min[2];
-            this.maxElevationRange = this.maxElevationRange ?? metadata.boundingBox.max[2];
-
             root.nodeType = 2;
             root.hierarchyByteOffset = 0n;
             root.hierarchyByteSize = BigInt(metadata.hierarchy.firstChunkSize);
-
             root.byteOffset = 0;
-
             this.root = root;
 
-            this.extent = Extent.fromBox3(this.source.crs || 'EPSG:4326', boundingBox);
+            this.setRootBbox(metadata.boundingBox.min, metadata.boundingBox.max);
+
             return this.root.loadOctree().then(resolve);
         });
     }
