@@ -100,7 +100,7 @@
                 itowns.View.prototype.addLayer.call(view, eptLayer).then(onLayerReady);
 
                 eptLayer.whenReady
-                    .then(() => debug.PotreeDebug.initTools(view, eptLayer, debugGui));
+                    .then(() => debug.PointCloudDebug.initTools(view, eptLayer, debugGui));
             }
 
             readEPTURL();
