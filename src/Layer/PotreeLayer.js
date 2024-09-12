@@ -58,6 +58,17 @@ class PotreeLayer extends PointCloudLayer {
             this.root.bbox.min.set(cloud.boundingBox.lx, cloud.boundingBox.ly, cloud.boundingBox.lz);
             this.root.bbox.max.set(cloud.boundingBox.ux, cloud.boundingBox.uy, cloud.boundingBox.uz);
 
+            this.clamp = {
+                zmin: cloud.boundingBox.lz,
+                zmax: cloud.boundingBox.uz,
+            };
+
+            this.minElevationRange = cloud.boundingBox.lz;
+            this.maxElevationRange = cloud.boundingBox.uz;
+
+            this.root.obb.fromBox3(this.root.bbox);
+            this.root.obb.position = new THREE.Vector3();
+
             return this.root.loadOctree().then(resolve);
         });
     }
