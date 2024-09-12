@@ -34,6 +34,7 @@ export default {
         const node = command.requester;
 
         return node.load().then((geometry) => {
+            console.log('#########provider.executeCommand');
             const origin = geometry.userData.origin || node.bbox.min;
             const points = new THREE.Points(geometry, layer.material);
 
@@ -92,11 +93,14 @@ export default {
             }
 
             geometryOBB.computeBoundingBox();
+            const testbbox = geometryOBB.boundingBox.applyMatrix4(points.matrix);
             const obb = new OBB().fromBox3(geometryOBB.boundingBox);
             obb.applyMatrix4(pointsOBB.matrixWorld);
             obb.position = origin;
+            obb.position = { x: 0, y: 0, z: 0 };
 
             points.tightobb = obb;
+            console.log('^^^^^provider.executeCommand');
 
             return points;
         });

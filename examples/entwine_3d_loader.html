@@ -58,6 +58,7 @@
 
             function onLayerReady() {
                 var lookAt = new itowns.THREE.Vector3();
+                // console.log('Entwine 3D loader', eptLayer.root.obb)
                 eptLayer.root.bbox.getCenter(lookAt);
                 var coordLookAt = new itowns.Coordinates(view.referenceCrs, lookAt);
 

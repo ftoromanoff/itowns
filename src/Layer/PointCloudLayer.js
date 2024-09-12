@@ -3,6 +3,7 @@ import GeometryLayer from 'Layer/GeometryLayer';
 import PointsMaterial, { PNTS_MODE } from 'Renderer/PointsMaterial';
 import Picking from 'Core/Picking';
 import OBBHelper from 'Utils/OBBHelper';
+import Coordinates from 'Core/Geographic/Coordinates';
 
 const _vector = /* @__PURE__ */ new THREE.Vector3();
 
@@ -28,17 +29,34 @@ function initBoundingBox(elt, layer) {
 
 function initOrientedBox(elt, layer) {
     const newobb = elt.obb.clone();
-    const zmin = clamp(newobb.center.z - newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
-    const zmax = clamp(newobb.center.z + newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
-    newobb.center.z = (zmin + zmax) / 2;
-    newobb.halfSize.z = Math.abs(zmax - zmin) / 2;
-    elt.obj.obbHelper = new OBBHelper(newobb, 0xff00ff);// violet
+    if (layer.crs === 'EPSG:4978') {
+        const origin = new Coordinates(layer.crs, newobb.center);
+
+        const center = origin.as('EPSG:4326');
+        // console.log(origin, center);
+        // console.log(center.z, obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+        const zmin2 = clamp(center.z - newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+        const zmax2 = clamp(center.z + newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+        center.z = (zmin2 + zmax2) / 2;
+        const center2 = center.as('EPSG:4978');
+        const halfSize = Math.abs(zmax2 - zmin2) / 2;
+        // console.log('center2', center2);
+        newobb.halfSize.z = halfSize;
+        newobb.center = center2.toVector3();
+    } else {
+        const zmin = clamp(newobb.center.z - newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+        const zmax = clamp(newobb.center.z + newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+        newobb.center.z = (zmin + zmax) / 2;
+        newobb.halfSize.z = Math.abs(zmax - zmin) / 2;
+    }
+
+    elt.obj.obbHelper = new OBBHelper(newobb, elt.obj, 0xff00ff);// violet
     elt.obj.obbHelper.position.copy(elt.obb.position);
     layer.obbes.add(elt.obj.obbHelper);
     elt.obj.obbHelper.updateMatrixWorld();
 
     const newtightobb = elt.tightobb.clone();
-    elt.obj.tightobbHelper = new OBBHelper(newtightobb, 0x00ff00);// vert
+    elt.obj.tightobbHelper = new OBBHelper(newtightobb, elt.obj, 0x00ff00);// vert
     elt.obj.tightobbHelper.position.copy(elt.tightobb.position);
     layer.obbes.add(elt.obj.tightobbHelper);
     elt.obj.tightobbHelper.updateMatrixWorld();
@@ -265,6 +283,7 @@ class PointCloudLayer extends GeometryLayer {
     }
 
     update(context, layer, elt) {
+        console.log('update');
         elt.visible = false;
 
         if (this.octreeDepthLimit >= 0 && this.octreeDepthLimit < elt.depth) {
@@ -280,16 +299,35 @@ class PointCloudLayer extends GeometryLayer {
             obb = elt.obb.clone();
             obb.position = elt.obb.position || new THREE.Vector3();
             // clamp the initial OBB
-            const zmin = clamp(obb.center.z - obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
-            const zmax = clamp(obb.center.z + obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
-            obb.center.z = (zmin + zmax) / 2;
-            obb.halfSize.z = Math.abs(zmax - zmin) / 2;
+            if (this.crs === 'EPSG:4978') {
+                const origin = new Coordinates(this.crs, obb.center);
+
+                const center = origin.as('EPSG:4326');
+                // console.log(origin, center);
+                // console.log(center.z, obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+                const zmin2 = clamp(center.z - obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+                const zmax2 = clamp(center.z + obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+                center.z = (zmin2 + zmax2) / 2;
+                const center2 = center.as('EPSG:4978');
+                const halfSize = Math.abs(zmax2 - zmin2) / 2;
+                // console.log('center2', center2);
+                obb.halfSize.z = halfSize;
+                obb.center = center2.toVector3();
+            } else {
+                const zmin = clamp(obb.center.z - obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+                const zmax = clamp(obb.center.z + obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+                obb.center.z = (zmin + zmax) / 2;
+                obb.halfSize.z = Math.abs(zmax - zmin) / 2;
+            }
         }
 
-        elt.visible = context.camera.isObbVisible(obb, this.object3d.matrixWorld);
+        // elt.visible = context.camera.isObbVisible(obb, this.object3d.matrixWorld);
+        const bbox = (elt.tightbbox ? elt.tightbbox : elt.bbox);
+        elt.visible = context.camera.isBox3Visible(bbox, this.object3d.matrixWorld);
 
         if (!elt.visible) {
             markForDeletion(elt);
+            console.log('update. return');
             return;
         }
 
@@ -308,12 +346,12 @@ class PointCloudLayer extends GeometryLayer {
                         }
 
                         elt.obj.box3Helper.visible = true;
-                        elt.obj.box3Helper.material.color.r = 1 - elt.sse;
-                        elt.obj.box3Helper.material.color.g = elt.sse;
+                        // elt.obj.box3Helper.material.color.r = 1 - elt.sse;
+                        // elt.obj.box3Helper.material.color.g = elt.sse;
 
                         elt.obj.tightbox3Helper.visible = true;
-                        elt.obj.tightbox3Helper.material.color.r = 1 - elt.sse;
-                        elt.obj.tightbox3Helper.material.color.g = elt.sse;
+                        // elt.obj.tightbox3Helper.material.color.r = 1 - elt.sse;
+                        // elt.obj.tightbox3Helper.material.color.g = elt.sse;
                     }
                     if (this.obbes.visible) {
                         if (!elt.obj.obbHelper) {
@@ -321,18 +359,21 @@ class PointCloudLayer extends GeometryLayer {
                         }
 
                         elt.obj.obbHelper.visible = true;
-                        elt.obj.obbHelper.material.color.r = 1 - elt.sse;
-                        elt.obj.obbHelper.material.color.g = elt.sse;
+                        // elt.obj.obbHelper.material.color.r = 1 - elt.sse;
+                        // elt.obj.obbHelper.material.color.g = elt.sse;
 
                         elt.obj.tightobbHelper.visible = true;
-                        elt.obj.tightobbHelper.material.color.r = 1 - elt.sse;
-                        elt.obj.tightobbHelper.material.color.g = elt.sse;
+                        // elt.obj.tightobbHelper.material.color.r = 1 - elt.sse;
+                        // elt.obj.tightobbHelper.material.color.g = elt.sse;
                     }
                 }
             } else if (!elt.promise) {
+                // console.log('elt.promise');
                 const obbWorld = obb.clone();
-                obbWorld.center = obb.center.clone().applyMatrix3(obb.rotation).add(obb.position);
+                // obbWorld.center = obb.center.clone().applyMatrix3(obb.rotation).add(obb.position);
+                // console.log(obb, obbWorld);
                 const obbDistance = Math.max(0.001, obbWorld.clampPoint(_point, _vector).distanceTo(_point));
+                // console.log(obbDistance);
 
                 const distance = obbDistance;
                 // Increase priority of nearest node

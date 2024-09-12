@@ -48,6 +48,7 @@ class EntwinePointTileLayer extends PointCloudLayer {
 
         const resolve = this.addInitializationStep();
         this.whenReady = this.source.whenReady.then(() => {
+            console.log('#######layer');
             if (this.crs !== config.crs) { console.warn('layer.crs is different from View.crs'); }
             this.root = new EntwinePointTileNode(0, 0, 0, 0, this, -1);
 
@@ -106,6 +107,8 @@ class EntwinePointTileLayer extends PointCloudLayer {
                 alignYtoEast.setFromAxisAngle(axisZ, THREE.MathUtils.degToRad(90 + center4326.longitude));
                 points.quaternion.multiply(alignYtoEast);
             }
+            points.position.copy(origin);
+            points.updateMatrix();
             points.updateMatrixWorld();
 
             matrixWorld.copy(points.matrixWorld);
@@ -125,15 +128,22 @@ class EntwinePointTileLayer extends PointCloudLayer {
 
             geometry.computeBoundingBox();
 
+            const testbbox = geometry.boundingBox.applyMatrix4(points.matrix);
+            console.log(points);
+
             this.root.obb.fromBox3(geometry.boundingBox);
             this.root.obb.applyMatrix4(matrixWorld);
             this.root.obb.position = origin.toVector3();
+            this.root.obb.position = new THREE.Vector3();
 
             // NOTE: this spacing is kinda arbitrary here, we take the width and
             // length (height can be ignored), and we divide by the specified
             // span in ept.json. This needs improvements.
             this.spacing = (Math.abs(this.source.bounds[3] - this.source.bounds[0])
                 + Math.abs(this.source.bounds[4] - this.source.bounds[1])) / (2 * this.source.span);
+
+            console.log('root.obb', this.root.obb);
+            console.log('^^^^layer');
 
             return this.root.loadOctree().then(resolve);
         });

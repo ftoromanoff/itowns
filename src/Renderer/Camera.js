@@ -211,6 +211,8 @@ class Camera {
     }
 
     isObbVisible(obb, matrixWorld) {
+        console.log('isObbVisible');
+        console.log(ndcObb);
         return this.obbSizeOnScreen(obb, matrixWorld).intersectsOBB(ndcObb);
     }
 
@@ -246,6 +248,7 @@ class Camera {
     }
 
     obbSizeOnScreen(obb, matrixWorld) {
+        console.log('obbSizeOnScreen');
         const pts = projectObbPointsInCameraSpace(this, obb, matrixWorld);
 
         // All points are in front of the near plane -> box3 is invisible
@@ -258,8 +261,11 @@ class Camera {
         for (let i = 0; i < 8; i++) {
             pts[i].applyMatrix4(this.camera3D.projectionMatrix);
         }
+        const temp = tmp.obb.fromBox3(tmp.box3.setFromPoints(pts));
+        console.log(obb, temp);
 
-        return tmp.obb.fromBox3(tmp.box3.setFromPoints(pts));
+        // return tmp.obb.fromBox3(tmp.box3.setFromPoints(pts));
+        return temp;
     }
 
     /**
