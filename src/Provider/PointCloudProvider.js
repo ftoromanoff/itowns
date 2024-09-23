@@ -45,20 +45,23 @@ export default {
 
             points.updateMatrix();
             geometry.computeBoundingBox();
-            points.tightbbox = geometry.boundingBox.applyMatrix4(points.matrix);
-            points.layer = layer;
+            geometry.boundingBox.applyMatrix4(points.matrix);
+            points.tightbbox = geometry.boundingBox;
 
+            points.layer = layer;
             points.extent = Extent.fromBox3(command.view.referenceCrs, node.bbox);
             points.userData.node = node;
 
             // OBB
             const position = geometry.attributes.position.array.slice();
 
+            console.log('otigin', origin);
+
             const geometryOBB = new THREE.BufferGeometry();
             const pointsOBB = new THREE.Points(geometryOBB);
 
-            const matrixWorld = new THREE.Matrix4();
-            const matrixWorldInverse = new THREE.Matrix4();
+            const matrix = new THREE.Matrix4();
+            const matrixInverse = new THREE.Matrix4();
 
             if (layer.crs === 'EPSG:4978') {
                 const axisZ = new THREE.Vector3(0, 0, 1);
@@ -72,10 +75,11 @@ export default {
                 alignYtoEast.setFromAxisAngle(axisZ, THREE.MathUtils.degToRad(90 + center4326.longitude));
                 pointsOBB.quaternion.multiply(alignYtoEast);
             }
-            pointsOBB.updateMatrixWorld();
+            pointsOBB.position.copy(origin);
+            pointsOBB.updateMatrix();
 
-            matrixWorld.copy(pointsOBB.matrixWorld);
-            matrixWorldInverse.copy(matrixWorld).invert();
+            matrix.copy(pointsOBB.matrix);
+            matrixInverse.copy(matrix).invert();
 
             const positionBuffer = new THREE.BufferAttribute(position, 3);
             geometryOBB.setAttribute('position', positionBuffer);
@@ -84,7 +88,8 @@ export default {
 
             for (let i = 0; i < positions.count; i++) {
                 const coord = new THREE.Vector3(...positions.array.subarray(i * 3, i * 3 + 3))
-                    .applyMatrix4(matrixWorldInverse);
+                    .add(origin)
+                    .applyMatrix4(matrixInverse);
 
                 positions.array[i * 3] = coord.x;
                 positions.array[i * 3 + 1] = coord.y;
@@ -92,11 +97,17 @@ export default {
             }
 
             geometryOBB.computeBoundingBox();
+
+            // const testbbox = geometryOBB.boundingBox.applyMatrix4(points.matrix);
             const obb = new OBB().fromBox3(geometryOBB.boundingBox);
-            obb.applyMatrix4(pointsOBB.matrixWorld);
+            obb.applyMatrix4(pointsOBB.matrix);
             obb.position = origin;
+            obb.position = new THREE.Vector3();
+            // obb.matrixWorld = matrix;
 
             points.tightobb = obb;
+
+            console.log('this.tightobb.obb', obb, 'fromBox3', new OBB().fromBox3(geometryOBB.boundingBox));
 
             return points;
         });

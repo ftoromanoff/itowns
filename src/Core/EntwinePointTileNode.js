@@ -109,6 +109,7 @@ class EntwinePointTileNode extends PointCloudNode {
 
         childNode.obb.center = this.obb.center.clone().add(this.obb.halfSize.clone().multiplyScalar(-0.5)).add(translation);
         childNode.obb.position = this.obb.position.clone();
+        childNode.obb.matrixWorld = this.obb.matrixWorld.clone();
     }
 
     get octreeIsLoaded() {

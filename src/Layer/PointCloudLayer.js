@@ -26,20 +26,28 @@ function initBoundingBox(elt, layer) {
     elt.obj.tightbox3Helper.updateMatrixWorld();
 }
 
-function initOrientedBox(elt, layer) {
+function initOrientedBox(elt, layer, object3d) {
     const newobb = elt.obb.clone();
-    const zmin = clamp(newobb.center.z - newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
-    const zmax = clamp(newobb.center.z + newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
-    newobb.center.z = (zmin + zmax) / 2;
-    newobb.halfSize.z = Math.abs(zmax - zmin) / 2;
-    elt.obj.obbHelper = new OBBHelper(newobb, 0xff00ff);// violet
-    elt.obj.obbHelper.position.copy(elt.obb.position);
+    // const zmin = clamp(newobb.center.z - newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+    // const zmax = clamp(newobb.center.z + newobb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
+    // newobb.center.z = (zmin + zmax) / 2;
+    // newobb.halfSize.z = Math.abs(zmax - zmin) / 2;
+
+
+    // console.log(elt.obj.matrix);
+    console.log(elt.obb, elt.tightobb);
+
+
+    elt.obj.obbHelper = new OBBHelper(newobb, object3d, 0xff00ff);// violet
+    elt.obj.obbHelper.name = 'root Obb';
+    // elt.obj.obbHelper.position.copy(elt.obb.position);
     layer.obbes.add(elt.obj.obbHelper);
     elt.obj.obbHelper.updateMatrixWorld();
 
     const newtightobb = elt.tightobb.clone();
-    elt.obj.tightobbHelper = new OBBHelper(newtightobb, 0x00ff00);// vert
-    elt.obj.tightobbHelper.position.copy(elt.tightobb.position);
+    elt.obj.tightobbHelper = new OBBHelper(newtightobb, object3d, 0x00ff00);// vert
+    elt.obj.tightobbHelper.name = 'tight Obb';
+    // elt.obj.tightobbHelper.position.copy(elt.tightobb.position);
     layer.obbes.add(elt.obj.tightobbHelper);
     elt.obj.tightobbHelper.updateMatrixWorld();
 }
@@ -280,13 +288,18 @@ class PointCloudLayer extends GeometryLayer {
             obb = elt.obb.clone();
             obb.position = elt.obb.position || new THREE.Vector3();
             // clamp the initial OBB
+            // console.log(elt.obb, obb);
+            // console.log(layer.minElevationRange, layer.maxElevationRange);
             const zmin = clamp(obb.center.z - obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
             const zmax = clamp(obb.center.z + obb.halfSize.z, layer.minElevationRange, layer.maxElevationRange);
             obb.center.z = (zmin + zmax) / 2;
             obb.halfSize.z = Math.abs(zmax - zmin) / 2;
         }
 
-        elt.visible = context.camera.isObbVisible(obb, this.object3d.matrixWorld);
+        // elt.visible = context.camera.isObbVisible(obb, this.object3d.matrixWorld);
+        const bbox = (elt.tightbbox ? elt.tightbbox : elt.bbox);
+        // console.log(elt.bbox, elt.bbox.max.x - elt.bbox.min.x);
+        elt.visible = context.camera.isBox3Visible(bbox, this.object3d.matrixWorld);
 
         if (!elt.visible) {
             markForDeletion(elt);
@@ -308,25 +321,26 @@ class PointCloudLayer extends GeometryLayer {
                         }
 
                         elt.obj.box3Helper.visible = true;
-                        elt.obj.box3Helper.material.color.r = 1 - elt.sse;
-                        elt.obj.box3Helper.material.color.g = elt.sse;
+                        // elt.obj.box3Helper.material.color.r = 1 - elt.sse;
+                        // elt.obj.box3Helper.material.color.g = elt.sse;
 
                         elt.obj.tightbox3Helper.visible = true;
-                        elt.obj.tightbox3Helper.material.color.r = 1 - elt.sse;
-                        elt.obj.tightbox3Helper.material.color.g = elt.sse;
+                        // elt.obj.tightbox3Helper.material.color.r = 1 - elt.sse;
+                        // elt.obj.tightbox3Helper.material.color.g = elt.sse;
                     }
                     if (this.obbes.visible) {
                         if (!elt.obj.obbHelper) {
-                            initOrientedBox(elt, layer);
+                            initOrientedBox(elt, layer, this.object3d);
+                            console.log(this.object3d);
                         }
 
                         elt.obj.obbHelper.visible = true;
-                        elt.obj.obbHelper.material.color.r = 1 - elt.sse;
-                        elt.obj.obbHelper.material.color.g = elt.sse;
+                        // elt.obj.obbHelper.material.color.r = 1 - elt.sse;
+                        // elt.obj.obbHelper.material.color.g = elt.sse;
 
                         elt.obj.tightobbHelper.visible = true;
-                        elt.obj.tightobbHelper.material.color.r = 1 - elt.sse;
-                        elt.obj.tightobbHelper.material.color.g = elt.sse;
+                        // elt.obj.tightobbHelper.material.color.r = 1 - elt.sse;
+                        // elt.obj.tightobbHelper.material.color.g = elt.sse;
                     }
                 }
             } else if (!elt.promise) {

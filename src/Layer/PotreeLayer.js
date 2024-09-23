@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import PointCloudLayer from 'Layer/PointCloudLayer';
 import PotreeNode from 'Core/PotreeNode';
+import Coordinates from 'Core/Geographic/Coordinates';
+import proj4 from 'proj4';
+import { OBB } from 'ThreeExtended/math/OBB';
 
 /**
  * @property {boolean} isPotreeLayer - Used to checkout whether this layer
@@ -42,6 +45,7 @@ class PotreeLayer extends PointCloudLayer {
         const resolve = this.addInitializationStep();
 
         this.source.whenReady.then((cloud) => {
+            console.log(cloud);
             this.scale = new THREE.Vector3().addScalar(cloud.scale);
             this.spacing = cloud.spacing;
             this.hierarchyStepSize = cloud.hierarchyStepSize;
@@ -55,19 +59,112 @@ class PotreeLayer extends PointCloudLayer {
             this.supportsProgressiveDisplay = (this.source.extension === 'cin');
 
             this.root = new PotreeNode(0, 0, this);
-            this.root.bbox.min.set(cloud.boundingBox.lx, cloud.boundingBox.ly, cloud.boundingBox.lz);
-            this.root.bbox.max.set(cloud.boundingBox.ux, cloud.boundingBox.uy, cloud.boundingBox.uz);
 
+            let forward = (x => x);
+            if (this.source.crs !== this.crs) {
+                try {
+                    forward = proj4(this.source.crs, this.crs).forward;
+                } catch (err) {
+                    throw new Error(`${err} is not defined in proj4`);
+                }
+            }
+
+            this.minElevationRange = cloud.tightBoundingBox.lz;
+            this.maxElevationRange = cloud.tightBoundingBox.uz;
+
+            // for BBOX
+            const tightBounds = [
+                ...forward([cloud.tightBoundingBox.lx, cloud.tightBoundingBox.ly, cloud.tightBoundingBox.lz]),
+                ...forward([cloud.tightBoundingBox.ux, cloud.tightBoundingBox.uy, cloud.tightBoundingBox.uz]),
+            ];
             this.clamp = {
-                zmin: cloud.boundingBox.lz,
-                zmax: cloud.boundingBox.uz,
+                zmin: tightBounds[2],
+                zmax: tightBounds[5],
             };
 
-            this.minElevationRange = cloud.boundingBox.lz;
-            this.maxElevationRange = cloud.boundingBox.uz;
+            const bounds = [
+                ...forward([cloud.boundingBox.lx, cloud.boundingBox.ly, cloud.boundingBox.lz]),
+                ...forward([cloud.boundingBox.ux, cloud.boundingBox.uy, cloud.boundingBox.uz]),
+            ];
 
-            this.root.obb.fromBox3(this.root.bbox);
+            this.root.bbox.setFromArray(bounds);
+
+            // for OBB
+            // Get the transformation between the data coordinate syteme and the view's.
+            // const test = [cloud.boundingBox.ux, cloud.boundingBox.uy, cloud.boundingBox.uz];
+
+
+            // const centerZ0 = [cloud.tightBoundingBox.lx, cloud.tightBoundingBox.ly, cloud.tightBoundingBox.lz]
+            //     // .slice(0, this.crs === 'EPSG:4978' ? 3 : 2)
+            //     .slice(0, 2)
+            //     .map((val, i) =>  Math.floor((val + test[i]) * 0.5));
+
+            // // if (this.crs === 'EPSG:4978') {
+            // //     const originZ0 = new Coordinates('EPSG:4978').setFromArray(centerZ0).as('EPSG:4326');
+
+            // //     const originZ2 = new Coordinates('EPSG:4326').setFromArray([originZ0.x, originZ0.y, 0]).as('EPSG:4978');
+
+            // //     console.log(centerZ0, originZ0, originZ2);
+            // //     centerZ0 = originZ2;
+            // // } else {
+            // //     centerZ0.push(0);
+            // // }
+            // centerZ0.push(0);
+
+            const test = [cloud.tightBoundingBox.ux, cloud.tightBoundingBox.uy, cloud.tightBoundingBox.uz];
+            const centerZ0 = [cloud.tightBoundingBox.lx, cloud.tightBoundingBox.ly, cloud.tightBoundingBox.lz]
+                .map((val, i) =>  Math.floor((val + test[i]) * 0.5));
+
+            console.log('centerZ0', this.source.crs, '=>', this.crs, centerZ0);
+
+            const geometry = new THREE.BufferGeometry();
+            const points = new THREE.Points(geometry);
+
+            const matrix = new THREE.Matrix4();
+            const matrixInverse = new THREE.Matrix4();
+
+            let origin = new Coordinates(this.crs);
+            if (this.crs === 'EPSG:4978') {
+                const axisZ = new THREE.Vector3(0, 0, 1);
+                const alignYtoEast = new THREE.Quaternion();
+                const center = new Coordinates(this.source.crs, centerZ0);
+                origin = center.as('EPSG:4978');
+                const center4326 = origin.as('EPSG:4326');
+
+                // align Z axe to geodesic normal.
+                points.quaternion.setFromUnitVectors(axisZ, origin.geodesicNormal);
+                // align Y axe to East
+                alignYtoEast.setFromAxisAngle(axisZ, THREE.MathUtils.degToRad(90 + center4326.longitude));
+                points.quaternion.multiply(alignYtoEast);
+            }
+
+            points.updateMatrix();
+
+            matrix.copy(points.matrix);
+            matrixInverse.copy(matrix).invert();
+
+            // proj in repere local (apply rotation) to get obb from bbox
+            const boundsLocal = [];
+            for (let i = 0; i < bounds.length; i += 3) {
+                const coord = new THREE.Vector3(...bounds.slice(i, i + 3));
+                    // .sub(origin.toVector3());
+                const coordlocal = coord.applyMatrix4(matrixInverse);
+                boundsLocal.push(...coordlocal);
+            }
+
+            const positionsArray = new Float32Array(boundsLocal);
+            const positionBuffer = new THREE.BufferAttribute(positionsArray, 3);
+            geometry.setAttribute('position', positionBuffer);
+
+            geometry.computeBoundingBox();
+
+            const testbbox = geometry.boundingBox.applyMatrix4(points.matrix);
+            this.root.obb.fromBox3(geometry.boundingBox);
+            this.root.obb.applyMatrix4(matrix);
+            this.root.obb.position = origin.toVector3();
             this.root.obb.position = new THREE.Vector3();
+            this.root.obb.matrixWorld = matrix;
+            console.log(this.root.obb, new OBB().fromBox3(this.root.bbox));
 
             return this.root.loadOctree().then(resolve);
         });

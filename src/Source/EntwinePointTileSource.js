@@ -43,6 +43,8 @@ class EntwinePointTileSource extends Source {
             this.parse = metadata.dataType === 'laszip' ? LASParser.parse : PotreeBinParser.parse;
             this.extension = metadata.dataType === 'laszip' ? 'laz' : 'bin';
 
+            console.log(metadata);
+
             if (metadata.srs && metadata.srs.authority && metadata.srs.horizontal) {
                 this.crs = `${metadata.srs.authority}:${metadata.srs.horizontal}`;
                 if (!proj4.defs(this.crs)) {

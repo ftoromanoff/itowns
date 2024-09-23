@@ -73,6 +73,7 @@ export default {
      *
      */
     parse: function parse(buffer, options) {
+        console.log('BINPARSER');
         if (!buffer) {
             throw new Error('No array buffer provided.');
         }
@@ -102,8 +103,6 @@ export default {
             attrOffset = elemOffset;
             geometry.setAttribute(attr.attributeName, new THREE.BufferAttribute(array, attr.numElements, attr.normalized));
         }
-
-        geometry.computeBoundingBox();
 
         return Promise.resolve(geometry);
     },

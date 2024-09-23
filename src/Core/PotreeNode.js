@@ -68,6 +68,7 @@ class PotreeNode extends PointCloudNode {
         // to check if it's enought
         childNode.obb.fromBox3(childNode.bbox);
         childNode.obb.position = new THREE.Vector3();
+        childNode.obb.matrixWorld = this.obb.matrixWorld.clone();
     }
 
     get octreeIsLoaded() {

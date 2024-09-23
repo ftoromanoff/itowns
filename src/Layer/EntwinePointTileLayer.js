@@ -3,6 +3,7 @@ import EntwinePointTileNode from 'Core/EntwinePointTileNode';
 import PointCloudLayer from 'Layer/PointCloudLayer';
 import Coordinates from 'Core/Geographic/Coordinates';
 import proj4 from 'proj4';
+import { OBB } from 'ThreeExtended/math/OBB';
 
 /**
  * @property {boolean} isEntwinePointTileLayer - Used to checkout whether this
@@ -49,6 +50,7 @@ class EntwinePointTileLayer extends PointCloudLayer {
         const resolve = this.addInitializationStep();
         this.whenReady = this.source.whenReady.then(() => {
             if (this.crs !== config.crs) { console.warn('layer.crs is different from View.crs'); }
+
             this.root = new EntwinePointTileNode(0, 0, 0, 0, this, -1);
 
             let forward = (x => x);
@@ -60,18 +62,18 @@ class EntwinePointTileLayer extends PointCloudLayer {
                 }
             }
 
+            this.minElevationRange = this.source.boundsConforming[2];
+            this.maxElevationRange = this.source.boundsConforming[5];
+
             // for BBOX
-            const boundsConforming = [
+            const tightBounds = [
                 ...forward(this.source.boundsConforming.slice(0, 3)),
                 ...forward(this.source.boundsConforming.slice(3, 6)),
             ];
             this.clamp = {
-                zmin: boundsConforming[2],
-                zmax: boundsConforming[5],
+                zmin: tightBounds[2],
+                zmax: tightBounds[5],
             };
-
-            this.minElevationRange = this.source.boundsConforming[2];
-            this.maxElevationRange = this.source.boundsConforming[5];
 
             const bounds = [
                 ...forward(this.source.bounds.slice(0, 3)),
@@ -80,19 +82,23 @@ class EntwinePointTileLayer extends PointCloudLayer {
 
             this.root.bbox.setFromArray(bounds);
 
+            // for OBB
             // Get the transformation between the data coordinate syteme and the view's.
             const centerZ0 = this.source.boundsConforming
-                .slice(0, 2)
+                .slice(0, 3)
                 .map((val, i) =>  Math.floor((val + this.source.boundsConforming[i + 3]) * 0.5));
-            centerZ0.push(0);
+            // centerZ0.push(0);
+
+            // const centerZ0 = this.source.boundsConforming.slice(0, 3);
+            console.log('centerZ0', this.source.crs, '=>', this.crs, centerZ0);
 
             const geometry = new THREE.BufferGeometry();
             const points = new THREE.Points(geometry);
 
-            const matrixWorld = new THREE.Matrix4();
-            const matrixWorldInverse = new THREE.Matrix4();
+            const matrix = new THREE.Matrix4();
+            const matrixInverse = new THREE.Matrix4();
 
-            let origin = new Coordinates(this.crs);
+            let origin = new Coordinates(this.source.crs, centerZ0);
             if (this.crs === 'EPSG:4978') {
                 const axisZ = new THREE.Vector3(0, 0, 1);
                 const alignYtoEast = new THREE.Quaternion();
@@ -106,28 +112,39 @@ class EntwinePointTileLayer extends PointCloudLayer {
                 alignYtoEast.setFromAxisAngle(axisZ, THREE.MathUtils.degToRad(90 + center4326.longitude));
                 points.quaternion.multiply(alignYtoEast);
             }
-            points.updateMatrixWorld();
+            points.updateMatrix();
 
-            matrixWorld.copy(points.matrixWorld);
-            matrixWorldInverse.copy(matrixWorld).invert();
+            matrix.copy(points.matrix);
+            matrixInverse.copy(matrix).invert();
 
             // proj in repere local (apply rotation) to get obb from bbox
             const boundsLocal = [];
             for (let i = 0; i < bounds.length; i += 3) {
-                const coord = new THREE.Vector3(...bounds.slice(i, i + 3)).sub(origin.toVector3());
-                const coordlocal = coord.applyMatrix4(matrixWorldInverse);
+                const coord = new THREE.Vector3(...bounds.slice(i, i + 3))
+                    .sub(origin.toVector3());
+                const coordlocal = coord.applyMatrix4(matrixInverse);
                 boundsLocal.push(...coordlocal);
             }
 
-            const positionsArray = new Float32Array(boundsLocal);
+            const positionsArray = new Float32Array(this.source.bounds);
+
+            // const positionsArray = new Float32Array(boundsLocal);
             const positionBuffer = new THREE.BufferAttribute(positionsArray, 3);
             geometry.setAttribute('position', positionBuffer);
 
             geometry.computeBoundingBox();
 
+            console.log('MATRIX', matrix.clone());
+
+
             this.root.obb.fromBox3(geometry.boundingBox);
-            this.root.obb.applyMatrix4(matrixWorld);
-            this.root.obb.position = origin.toVector3();
+            this.root.obb.applyMatrix4(matrix);
+            // this.root.obb.position = origin.toVector3();
+            this.root.obb.center = origin.toVector3();
+            this.root.obb.position = new THREE.Vector3();
+            this.root.obb.matrixWorld = matrix;// new THREE.Matrix4();
+            console.log('this.root.obb', this.root.obb, 'fromBox3', new OBB().fromBox3(this.root.bbox));
+
 
             // NOTE: this spacing is kinda arbitrary here, we take the width and
             // length (height can be ignored), and we divide by the specified
