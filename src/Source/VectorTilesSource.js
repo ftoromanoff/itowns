@@ -71,9 +71,11 @@ class VectorTilesSource extends TMSSource {
 
         this.accessToken = source.accessToken;
 
+        let styleUrl;
         if (source.style) {
             if (typeof source.style == 'string') {
-                const styleUrl = urlParser.normalizeStyleURL(source.style, this.accessToken);
+                styleUrl = urlParser.normalizeStyleURL(source.style, this.accessToken);
+                console.log('styleUrl', styleUrl);
                 promise = Fetcher.json(styleUrl, this.networkOptions);
             } else {
                 promise = Promise.resolve(source.style);
@@ -84,8 +86,9 @@ class VectorTilesSource extends TMSSource {
 
         this.whenReady = promise.then((style) => {
             this.jsonStyle = style;
-            const baseurl = source.sprite || style.sprite;
+            let baseurl = source.sprite || style.sprite;
             if (baseurl) {
+                baseurl = new URL(baseurl, styleUrl).toString();
                 const spriteUrl = urlParser.normalizeSpriteURL(baseurl, '', '.json', this.accessToken);
                 return Fetcher.json(spriteUrl, this.networkOptions).then((sprites) => {
                     this.sprites = sprites;
@@ -123,9 +126,11 @@ class VectorTilesSource extends TMSSource {
             if (this.url == '.') {
                 const TMSUrlList = Object.values(style.sources).map((sourceVT) => {
                     if (sourceVT.url) {
+                        sourceVT.url = new URL(sourceVT.url, styleUrl).toString();
                         const urlSource = urlParser.normalizeSourceURL(sourceVT.url, this.accessToken);
                         return Fetcher.json(urlSource, this.networkOptions).then((tileJSON) => {
                             if (tileJSON.tiles[0]) {
+                                tileJSON.tiles[0] = decodeURIComponent(new URL(tileJSON.tiles[0], urlSource).toString());
                                 return toTMSUrl(tileJSON.tiles[0]);
                             }
                         });
@@ -139,6 +144,7 @@ class VectorTilesSource extends TMSSource {
             return (Promise.resolve([this.url]));
         }).then((TMSUrlList) => {
             this.urls = Array.from(new Set(TMSUrlList));
+            console.log('URLS', this.urls);
         });
     }
 
