@@ -761,10 +761,11 @@ class Style {
      * @param {Object} layer vector tile layer.
      * @param {Object} sprites vector tile layer.
      * @param {Boolean} [symbolToCircle=false]
+     * @param {Set} warn Set storing all warnings encountered by the source.
      *
      * @returns {StyleOptions} containing all properties for itowns.Style
      */
-    static setFromVectorTileLayer(layer, sprites, symbolToCircle = false) {
+    static setFromVectorTileLayer(layer, sprites, symbolToCircle = false, warn) {
         const style = {
             fill: {},
             stroke: {},
@@ -875,13 +876,21 @@ class Style {
                                     cropValues = function _(p) {
                                         const id = stop[1].replace(/\{(.+?)\}/g, (a, b) => (p[b] || '')).trim();
                                         if (cropValues === undefined) {
-                                            // const warning = `WARNING: "${id}" not found in sprite file`;
+                                            const warning = `WARNING: "${id}" not found in sprite file`;
+                                            if (!warn.has(warning)) {
+                                                warn.add(warning);
+                                                console.warn(warning);
+                                            }
                                             sprites[id] = cropValueDefault;// or return cropValueDefault;
                                         }
                                         return sprites[id];
                                     };
                                 } else if (cropValues === undefined) {
-                                    // const warning = `WARNING: "${stop[1]}" not found in sprite file`;
+                                    const warning = `WARNING: "${stop[1]}" not found in sprite file`;
+                                    if (!warn.has(warning)) {
+                                        warn.add(warning);
+                                        console.warn(warning);
+                                    }
                                     cropValues = cropValueDefault;
                                 }
                                 return [stop[0], cropValues];
@@ -894,13 +903,21 @@ class Style {
                             style.icon.cropValues = function _(p) {
                                 const id = iconImg.replace(/\{(.+?)\}/g, (a, b) => (p[b] || '')).trim();
                                 if (sprites[id] === undefined) {
-                                    // const warning = `WARNING: "${id}" not found in sprite file`;
+                                    const warning = `WARNING: "${id}" not found in sprite file`;
+                                    if (!warn.has(warning)) {
+                                        warn.add(warning);
+                                        console.warn(warning);
+                                    }
                                     sprites[id] = cropValueDefault;// or return cropValueDefault;
                                 }
                                 return sprites[id];
                             };
                         } else if (sprites[iconImg] === undefined) {
-                            // const warning = `WARNING: "${iconImg}" not found in sprite file`;
+                            const warning = `WARNING: "${iconImg}" not found in sprite file`;
+                            if (!warn.has(warning)) {
+                                warn.add(warning);
+                                console.warn(warning);
+                            }
                             style.icon.cropValues = cropValueDefault;
                         }
                     }

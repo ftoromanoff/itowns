@@ -5,6 +5,7 @@ import GeometryLayer from 'Layer/GeometryLayer';
 import Coordinates from 'Core/Geographic/Coordinates';
 import Extent from 'Core/Geographic/Extent';
 import Label from 'Core/Label';
+import { FEATURE_TYPES } from 'Core/Feature';
 import { readExpression, StyleContext } from 'Core/Style';
 import { ScreenGrid } from 'Renderer/Label2DRenderer';
 
@@ -257,6 +258,16 @@ class LabelLayer extends GeometryLayer {
                 if (Object.keys(f.style.text).length === 0) {
                     return;
                 }
+            }
+
+            // TODO: add support for LINE and POLYGON
+            if (f.type !== FEATURE_TYPES.POINT) {
+                const warn = `Type label ${Object.keys(FEATURE_TYPES).filter(ft => FEATURE_TYPES[ft] === f.type)} not well supported`;
+                if (!this.source.warn.has(warn)) {
+                    this.source.warn.add(warn);
+                    console.warn(warn);
+                }
+                return;
             }
 
             context.setFeature(f);
