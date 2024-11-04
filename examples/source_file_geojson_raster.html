@@ -66,16 +66,44 @@
                 crs: 'EPSG:4326',
                 format: 'application/json',
             });
+            const style = (properties) => {
+                    let color = '#FDFDFF'
+                    let width = 1
+                    if (properties.meateri === 'Résidentiel') {
+                        color = '#FDFDFF';
+                    } else if (properties.usage_1 === 'Annexe') {
+                        color = '#C6C5B9';
+                    }
+                    return {
+                        stroke: {
+                            color: color,
+                            width: width,
+                        },
+                    }
+                }
+            const fill = (properties) => {
+                const res = {
+                        color: 'pink',
+                        opacity: 1,
+                    };
+                if (properties.code === '09') {
+                    res.color = 'orange';
+                    res.opacity = 0.5;
+                }
+                // console.log(properties)
+                return res;
+            }
             // Create a ColorLayer for the Ariege area
             const ariegeLayer = new itowns.ColorLayer('ariege', {
                 name: 'ariege',
                 transparent: true,
                 source: ariegeSource,
                 style: {
-                    fill: {
-                        color: 'orange',
-                        opacity: 0.5,
-                    },
+                    // fill: {
+                    //     color: 'orange',
+                    //     opacity: 0.5,
+                    // },
+                    fill,
                     stroke: {
                         color: 'white',
                     },
@@ -83,6 +111,8 @@
             });
             // Add the Ariege ColorLayer to the view and grant it a tooltip
             view.addLayer(ariegeLayer).then(FeatureToolTip.addLayer);
+
+            console.log(ariegeLayer.style);
 
             // Declare the source for the data on Pyrenees Orientales area
             const pyoSource = new itowns.FileSource({
