@@ -147,6 +147,7 @@ function readPBF(file, options) {
 
         for (let i = vectorTileLayer.length - 1; i >= 0; i--) {
             const vtFeature = vectorTileLayer.feature(i);
+            // console.log(vtFeature);
             vtFeature.tileNumbers = { x, y: options.extent.row, z };
             // Find layers where this vtFeature is used
             const layers = options.in.layers[vtLayerName]
@@ -156,12 +157,22 @@ function readPBF(file, options) {
                 continue;
             }
 
+            let feature;
             for (const layer of layers) {
-                const feature = collection.requestFeatureById(layer.id, vtFeature.type - 1);
-                feature.id = layer.id;
-                feature.order = layer.order;
-                feature.style = options.in.styles[feature.id];
-                vtFeatureToFeatureGeometry(vtFeature, feature);
+                if (!feature) {
+                    console.log('ICI');
+                    feature = collection.requestFeatureById(layer.id, vtFeature.type - 1);
+                    feature.id = layer.id;
+                    feature.order = layer.order;
+                    feature.style = options.in.styles[feature.id];
+                    vtFeatureToFeatureGeometry(vtFeature, feature);
+                } else if (!collection.features.find(f => f.id === layer.id)) {
+                    console.log('LA');
+                    feature = collection.newFeatureByReference(feature);
+                    feature.id = layer.id;
+                    feature.order = layer.order;
+                    feature.style = options.in.styles[feature.id];
+                }
             }
         }
     });
@@ -173,6 +184,7 @@ function readPBF(file, options) {
     collection.updateExtent();
     collection.extent = options.extent;
     collection.isInverted = options.in.isInverted;
+    console.log(collection);
     return Promise.resolve(collection);
 }
 
