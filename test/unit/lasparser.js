@@ -13,15 +13,18 @@ const lazV14Url = `${url}/ellipsoid-1.4.laz`;
 describe('LASParser', function () {
     let lasData;
     let lazV14Data;
-    it('fetch binaries', async function () {
+    describe('fetch binaries', function () {
         const networkOptions = process.env.HTTPS_PROXY ? { agent: new HttpsProxyAgent(process.env.HTTPS_PROXY) } : {};
-        lasData = await Fetcher.arrayBuffer(lasUrl, networkOptions);
-        lazV14Data = await Fetcher.arrayBuffer(lazV14Url, networkOptions);
-    }).timeout(4000);
+        it('fetch las data', async function () {
+            lasData = await Fetcher.arrayBuffer(lasUrl, networkOptions);
+        });
+        it('fetch laz data', async function () {
+            lazV14Data = await Fetcher.arrayBuffer(lazV14Url, networkOptions);
+        });
+    });
 
     describe('unit tests', function () {
         const epsilon = 0.1;
-        LASParser.enableLazPerf('./examples/libs/laz-perf');
 
         it('parses a las file to a THREE.BufferGeometry', async function () {
             if (!lasData) { this.skip(); }
@@ -40,6 +43,7 @@ describe('LASParser', function () {
             assert.ok(compareWithEpsilon(bufferGeometry.boundingBox.max.x + origin.x, header.max[0], epsilon));
             assert.ok(compareWithEpsilon(bufferGeometry.boundingBox.max.y + origin.y, header.max[1], epsilon));
             assert.ok(compareWithEpsilon(bufferGeometry.boundingBox.max.z + origin.z, header.max[2], epsilon));
+            await LASParser.terminate();
         });
 
         it('parses a laz file to a THREE.BufferGeometry', async function () {
@@ -59,9 +63,6 @@ describe('LASParser', function () {
             assert.ok(compareWithEpsilon(bufferGeometry.boundingBox.max.x + origin.x, header.max[0], epsilon));
             assert.ok(compareWithEpsilon(bufferGeometry.boundingBox.max.y + origin.y, header.max[1], epsilon));
             assert.ok(compareWithEpsilon(bufferGeometry.boundingBox.max.z + origin.z, header.max[2], epsilon));
-        });
-
-        afterEach(async function () {
             await LASParser.terminate();
         });
     });
