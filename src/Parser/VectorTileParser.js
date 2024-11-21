@@ -175,20 +175,28 @@ function readPBF(file, options) {
                 feature.order = layer.layerOrder;
             });
 
-            let _feature;
+            // let _feature;
+            // for (const layer of layers) {
+            //     if (!_feature) {
+            //         _feature = _collection.requestFeatureById(layer.id, vtFeature.type - 1);
+            //         _feature.id = layer.id;
+            //         _feature.order = layer.order;
+            //         _feature.style = options.in.styles[_feature.id];
+            //         vtFeatureToFeatureGeometry(vtFeature, _feature);
+            //     } else if (!_collection.features.find(f => f.id === layer.id)) {
+            //         _feature = _collection.newFeatureByReference(_feature);
+            //         _feature.id = layer.id;
+            //         _feature.order = layer.order;
+            //         _feature.style = options.in.styles[_feature.id];
+            //     }
+            // }
+
             for (const layer of layers) {
-                if (!_feature) {
-                    _feature = _collection.requestFeatureById(layer.id, vtFeature.type - 1);
-                    _feature.id = layer.id;
-                    _feature.order = layer.order;
-                    _feature.style = options.in.styles[_feature.id];
-                    vtFeatureToFeatureGeometry(vtFeature, _feature);
-                } else if (!_collection.features.find(f => f.id === layer.id)) {
-                    _feature = _collection.newFeatureByReference(_feature);
-                    _feature.id = layer.id;
-                    _feature.order = layer.order;
-                    _feature.style = options.in.styles[_feature.id];
-                }
+                const _feature = _collection.requestFeatureById(layer.id, vtFeature.type - 1);
+                _feature.id = layer.id;
+                _feature.order = layer.order;
+                _feature.style = options.in.styles[_feature.id];
+                vtFeatureToFeatureGeometry(vtFeature, _feature);
             }
         }
     });
@@ -209,10 +217,10 @@ function readPBF(file, options) {
 
     // console.log(collection.features);
     // console.log(collection.features.map(f => f.type));
-    // console.log(_collection.features);
+    // console.log('zoom', z, _collection.features);
     // console.log(_collection.features.map(f => f.type));
 
-    return Promise.resolve(collection);
+    return Promise.resolve(_collection);
 }
 
 /**
