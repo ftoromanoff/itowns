@@ -96,6 +96,12 @@ class VectorTilesSource extends TMSSource {
 
                 return mvtStyle;
             }).then((mvtStyle) => {
+                console.log('mvtStyle', mvtStyle);
+                console.log('sprites', this.sprites);
+                // const layerName = 'country-label-lg';
+                // const layerName = 'rail-label';
+                // console.log(layerName, style.layers.filter(l => l.id === layerName)[0]);
+                let layerOrder = 0;
                 mvtStyle.layers.forEach((layer) => {
                     layer.sourceUid = this.uid;
                     if (layer.type === 'background') {
@@ -113,13 +119,17 @@ class VectorTilesSource extends TMSSource {
 
                         if (!this.layers[layer['source-layer']]) {
                             this.layers[layer['source-layer']] = [];
+                            layerOrder += 1;
                         }
                         this.layers[layer['source-layer']].push({
                             id: layer.id,
-                            filterExpression: featureFilter(layer.filter),
+                            layerOrder,
+                            filterExpression: featureFilter(layer.filter, layer.type),
                         });
                     }
                 });
+                console.log('layers:', this.layers);
+                console.log('styles:', this.styles);
 
                 if (this.url == '.') {
                     const TMSUrlList = Object.values(mvtStyle.sources).map((sourceVT) => {

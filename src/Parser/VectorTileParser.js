@@ -140,6 +140,11 @@ function readPBF(file, options) {
     collection.position.set(vFeature0.extent * x + center, vFeature0.extent * y + center, 0).multiply(collection.scale);
     collection.updateMatrixWorld();
 
+    const _collection = new FeatureCollection(options.out);
+    _collection.scale.set(globalExtent.x / size, -globalExtent.y / size, 1);
+    _collection.position.set(vFeature0.extent * x + center, vFeature0.extent * y + center, 0).multiply(_collection.scale);
+    _collection.updateMatrixWorld();
+
     vtLayerNames.forEach((vtLayerName) => {
         if (!options.in.layers[vtLayerName]) { return Promise.resolve(collection); }
 
@@ -156,19 +161,33 @@ function readPBF(file, options) {
                 continue;
             }
 
-            let feature;
+            const feature = collection.requestFeatureById(vtLayerName, vtFeature.type - 1);
+            feature.id = vtLayerName;
+
+            layers.forEach((layer) => {
+                vtFeature.properties.styleId = layer.id;
+                vtFeatureToFeatureGeometry(vtFeature, feature);
+                feature.style = (p) => {
+                    let style;
+                    if (!style) { style = options.in.styles[p.styleId]; }
+                    return style;
+                };
+                feature.order = layer.layerOrder;
+            });
+
+            let _feature;
             for (const layer of layers) {
-                if (!feature) {
-                    feature = collection.requestFeatureById(layer.id, vtFeature.type - 1);
-                    feature.id = layer.id;
-                    feature.order = layer.order;
-                    feature.style = options.in.styles[feature.id];
-                    vtFeatureToFeatureGeometry(vtFeature, feature);
-                } else if (!collection.features.find(f => f.id === layer.id)) {
-                    feature = collection.newFeatureByReference(feature);
-                    feature.id = layer.id;
-                    feature.order = layer.order;
-                    feature.style = options.in.styles[feature.id];
+                if (!_feature) {
+                    _feature = _collection.requestFeatureById(layer.id, vtFeature.type - 1);
+                    _feature.id = layer.id;
+                    _feature.order = layer.order;
+                    _feature.style = options.in.styles[_feature.id];
+                    vtFeatureToFeatureGeometry(vtFeature, _feature);
+                } else if (!_collection.features.find(f => f.id === layer.id)) {
+                    _feature = _collection.newFeatureByReference(_feature);
+                    _feature.id = layer.id;
+                    _feature.order = layer.order;
+                    _feature.style = options.in.styles[_feature.id];
                 }
             }
         }
@@ -181,6 +200,18 @@ function readPBF(file, options) {
     collection.updateExtent();
     collection.extent = options.extent;
     collection.isInverted = options.in.isInverted;
+
+    _collection.removeEmptyFeature();
+    _collection.features.sort((a, b) => a.order - b.order);
+    _collection.updateExtent();
+    _collection.extent = options.extent;
+    _collection.isInverted = options.in.isInverted;
+
+    // console.log(collection.features);
+    // console.log(collection.features.map(f => f.type));
+    // console.log(_collection.features);
+    // console.log(_collection.features.map(f => f.type));
+
     return Promise.resolve(collection);
 }
 
