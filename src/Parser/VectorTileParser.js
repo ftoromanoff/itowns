@@ -148,8 +148,14 @@ function readPBF(file, options) {
         for (let i = vectorTileLayer.length - 1; i >= 0; i--) {
             const vtFeature = vectorTileLayer.feature(i);
             vtFeature.tileNumbers = { x, y: options.extent.row, z };
+            // Find layers where this vtFeature is used
             const layers = options.in.layers[vtLayerName]
-                .filter(l => l.filterExpression.filter({ zoom: z }, vtFeature) && z >= l.zoom.min && z < l.zoom.max);
+                .filter(l => l.filterExpression.filter({ zoom: z }, vtFeature));
+
+            if (layers.length == 0) {
+                continue;
+            }
+
             let feature;
 
             for (const layer of layers) {
