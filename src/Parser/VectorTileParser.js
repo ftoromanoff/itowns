@@ -31,11 +31,11 @@ function project(x, y, tileNumbers, tileExtent) {
 // Clockwise direction is determined by Shoelace formula https://en.wikipedia.org/wiki/Shoelace_formula
 // Draw polygon with canvas doesn't need to classify however it is necessary for meshs.
 function vtFeatureToFeatureGeometry(vtFeature, feature, classify = false) {
-    let geometry = feature.bindNewGeometry();
     const isPolygon = feature.type === FEATURE_TYPES.POLYGON;
     classify = classify && isPolygon;
 
-    geometry.properties = vtFeature.properties;
+    let geometry = feature.bindNewGeometry();
+    feature.properties = vtFeature.properties;
     const pbf = vtFeature._pbf;
     pbf.pos = vtFeature._geometry;
 
@@ -65,7 +65,7 @@ function vtFeatureToFeatureGeometry(vtFeature, feature, classify = false) {
                     if (classify && sum > 0 && geometry.indices.length > 0) {
                         feature.updateExtent(geometry);
                         geometry = feature.bindNewGeometry();
-                        geometry.properties = vtFeature.properties;
+                        feature.properties = vtFeature.properties;
                     }
                     geometry.closeSubGeometry(count, feature);
                     geometry.getLastSubGeometry().ccw = sum < 0;
@@ -105,7 +105,7 @@ function vtFeatureToFeatureGeometry(vtFeature, feature, classify = false) {
         if (classify && sum > 0 && geometry.indices.length > 0) {
             feature.updateExtent(geometry);
             geometry = feature.bindNewGeometry();
-            geometry.properties = vtFeature.properties;
+            feature.properties = vtFeature.properties;
         }
         geometry.closeSubGeometry(count, feature);
         geometry.getLastSubGeometry().ccw = sum < 0;

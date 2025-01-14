@@ -72,7 +72,8 @@ const toFeature = {
         }
 
         const geometry = feature.bindNewGeometry();
-        geometry.properties = properties;
+        // geometry.properties = properties;
+        feature.properties = properties;
 
         this.populateGeometry(crsIn, coordsIn, geometry, feature);
         feature.updateExtent(geometry);
@@ -83,7 +84,8 @@ const toFeature = {
             return;
         }
         const geometry = feature.bindNewGeometry();
-        geometry.properties = properties;
+        // geometry.properties = properties;
+        feature.properties = properties;
 
         // Then read contour and holes
         for (let i = 0; i < coordsIn.length; i++) {
@@ -182,6 +184,8 @@ function jsonFeaturesToFeatures(crsIn, jsonFeatures, options) {
 
     collection.removeEmptyFeature();
     collection.updateExtent();
+
+    console.log(collection);
 
     return collection;
 }
