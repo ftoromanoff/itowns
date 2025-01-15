@@ -117,7 +117,7 @@ class VectorTilesSource extends TMSSource {
                     if (layer['source-layer'] === undefined) {
                         getPropertiesFromRefLayer(mvtStyle.layers, layer);
                     }
-                    const style = Style.setFromVectorTileLayer(layer, this.sprites, this.symbolToCircle);
+                    const style = Style.setFromVectorTileLayer(layer, this.sprites, this.symbolToCircle, this.warn);
                     this.styles[layer.id] = style;
 
                     if (!this.layers[layer['source-layer']]) {
