@@ -198,8 +198,8 @@ function featureToPoint(feature, options) {
         const start = geometry.indices[0].offset;
         const count = geometry.indices[0].count;
         const end = start + count;
-        const id = batchId(geometry.properties, featureId);
-        context.setGeometry(geometry);
+        const id = batchId(feature.properties, featureId);
+        // context.setGeometry(geometry);
 
         for (let v = start * 3, j = start; j < end; v += 3, j += 1) {
             if (feature.normals) {
@@ -270,8 +270,8 @@ function featureToLine(feature, options) {
     normal.set(0, 0, 1).multiply(inverseScale);
     // Multi line case
     for (const geometry of feature.geometries) {
-        context.setGeometry(geometry);
-        const id = batchId(geometry.properties, featureId);
+        // context.setGeometry(geometry);
+        const id = batchId(feature.properties, featureId);
 
         const start = geometry.indices[0].offset;
         // To avoid integer overflow with indice value (16 bits)
@@ -354,14 +354,14 @@ function featureToPolygon(feature, options) {
             console.warn('Feature to Polygon: integer overflow, too many points in polygons');
             break;
         }
-        context.setGeometry(geometry);
+        // context.setGeometry(geometry);
 
         const lastIndice = geometry.indices.slice(-1)[0];
         const end = lastIndice.offset + lastIndice.count;
         const count = end - start;
         const startIn = start * 3;
         const endIn = startIn + count * 3;
-        const id = batchId(geometry.properties, featureId);
+        const id = batchId(feature.properties, featureId);
 
         for (let i = startIn, b = start; i < endIn; i += 3, b += 1) {
             if (feature.normals) {
@@ -443,7 +443,7 @@ function featureToExtrudedPolygon(feature, options) {
     coord.setCrs(context.collection.crs);
 
     for (const geometry of feature.geometries) {
-        context.setGeometry(geometry);
+        // context.setGeometry(geometry);
 
         const start = geometry.indices[0].offset;
         const lastIndice = geometry.indices.slice(-1)[0];
@@ -454,7 +454,7 @@ function featureToExtrudedPolygon(feature, options) {
         const startIn = start * 3;
         const startTop = start + totalVertices;
         const endIn = startIn + count * 3;
-        const id = batchId(geometry.properties, featureId);
+        const id = batchId(feature.properties, featureId);
 
         for (let i = startIn, t = startIn + ptsIn.length, b = start; i < endIn; i += 3, t += 3, b += 1) {
             if (feature.normals) {

@@ -390,7 +390,7 @@ class C3DTilesLayer extends GeometryLayer {
                         continue;// this feature do not belong to object3d
                     }
 
-                    this._style.context.setGeometry({
+                    this._style.context.setFeature({
                         properties: c3DTileFeature,
                     });
 

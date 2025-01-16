@@ -66,7 +66,7 @@ export class FeatureGeometry {
      */
     constructor(feature) {
         this.indices = [];
-        this.properties = {};
+        // this.properties = {};
         this.size = feature.size;
         if (feature.extent) {
             this.extent = defaultExtent(feature.extent.crs);
@@ -349,6 +349,7 @@ export class FeatureCollection extends THREE.Object3D {
         this.crs = options.accurate || !options.source?.crs ? options.crs : options.source.crs;
         this.features = [];
         this.mergeFeatures = options.mergeFeatures === undefined ? true : options.mergeFeatures;
+        this.mergeFeatures = false;
         this.size = options.structure == '3d' ? 3 : 2;
         this.filterExtent = options.filterExtent;
         this.style = options.style;

@@ -271,16 +271,18 @@ class LabelLayer extends GeometryLayer {
             labels.needsAltitude = labels.needsAltitude || this.forceClampToTerrain === true || (isDefaultElevationStyle && !f.hasRawElevationData);
 
             f.geometries.forEach((g) => {
-                context.setGeometry(g);
+                // context.setGeometry(g);
                 this.style.setContext(context);
                 const layerField = this.style.text && this.style.text.field;
-                const geometryField = g.properties.style && g.properties.style.text && g.properties.style.text.field;
+                // const geometryField = g.properties.style && g.properties.style.text && g.properties.style.text.field;
+                const geometryField = f.properties.style && f.properties.style.text && f.properties.style.text.field;
                 let content;
                 if (this.labelDomelement) {
                     content = readExpression(this.labelDomelement, context);
                 } else if (!geometryField && !featureField && !layerField) {
                     // Check if there is an icon, with no text
-                    if (!(g.properties.style && (g.properties.style.icon.source || g.properties.style.icon.key))
+                    // if (!(g.properties.style && (g.properties.style.icon.source || g.properties.style.icon.key))
+                    if (!(f.properties.style && (f.properties.style.icon.source || f.properties.style.icon.key))
                         && !(f.style && f.style.icon && (f.style.icon.source || f.style.icon.key))
                         && !(this.style.icon && (this.style.icon.source || this.style.icon.key))) {
                         return;

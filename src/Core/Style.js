@@ -198,7 +198,7 @@ export class StyleContext {
     #localCoordinates = new Coordinates('EPSG:4326', 0, 0, 0);
     #worldCoordsComputed = true;
     #feature = {};
-    #geometry = {};
+    // #geometry = {};
 
     setZoom(zoom) {
         this.zoom = zoom;
@@ -208,9 +208,9 @@ export class StyleContext {
         this.#feature = f;
     }
 
-    setGeometry(g) {
-        this.#geometry = g;
-    }
+    // setGeometry(g) {
+    //     this.#geometry = g;
+    // }
 
     setCollection(c) {
         this.collection = c;
@@ -223,7 +223,7 @@ export class StyleContext {
     }
 
     get properties() {
-        return this.#geometry.properties;
+        return this.#feature.properties;
     }
 
     get type() {

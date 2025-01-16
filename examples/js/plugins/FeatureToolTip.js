@@ -67,7 +67,7 @@ const FeatureToolTip = (function _() {
     function fillToolTip(features, layer, options) {
         let content = '';
         let feature;
-        let geometry;
+        // let geometry;
         const style = layer.style;
         let fill;
         let stroke;
@@ -78,10 +78,10 @@ const FeatureToolTip = (function _() {
 
         for (let p = 0; p < features.length; p++) {
             feature = features[p];
-            geometry = feature.geometry;
+            // geometry = feature.geometry;
 
             context.setFeature(feature);
-            context.setGeometry(geometry);
+            // context.setGeometry(geometry);
 
             if (feature.type === itowns.FEATURE_TYPES.POLYGON) {
                 symb = '&#9724';
@@ -92,6 +92,8 @@ const FeatureToolTip = (function _() {
                 fill = style.stroke && style.stroke.color;
                 stroke = '0px';
             } else if (feature.type === itowns.FEATURE_TYPES.POINT) {
+                console.log(style);
+                console.log(feature);
                 symb = '&#9679';
                 if (style.point || style.icon) {  // Style and style.point can be undefined if no style options were passed
                     fill = (style.point && style.point.color) || (style.icon && style.icon.color);
@@ -104,8 +106,8 @@ const FeatureToolTip = (function _() {
             content += symb + ' ';
             content += '</span>';
 
-            if (geometry.properties) {
-                content += (geometry.properties.description || geometry.properties.name || geometry.properties.nom || geometry.properties.title || layer.name || '');
+            if (feature.properties) {
+                content += (feature.properties.description || feature.properties.name || feature.properties.nom || feature.properties.title || layer.name || '');
             }
 
             if (feature.type === itowns.FEATURE_TYPES.POINT && options.writeLatLong) {
@@ -113,18 +115,18 @@ const FeatureToolTip = (function _() {
                 content += '<br/><span class="coord">lat ' + feature.coordinates[1].toFixed(4) + '</span>';
             }
 
-            if (geometry.properties && !options.filterAllProperties) {
+            if (feature.properties && !options.filterAllProperties) {
                 if (options.format) {
-                    for (prop in geometry.properties) {
+                    for (prop in feature.properties) {
                         if (!options.filterProperties.includes(prop)) {
-                            content += options.format(prop, geometry.properties[prop]) || '';
+                            content += options.format(prop, feature.properties[prop]) || '';
                         }
                     }
                 } else {
                     content += '<ul>';
-                    for (prop in geometry.properties) {
+                    for (prop in feature.properties) {
                         if (!options.filterProperties.includes(prop)) {
-                            content += '<li>' + prop + ': ' + geometry.properties[prop] + '</li>';
+                            content += '<li>' + prop + ': ' + feature.properties[prop] + '</li>';
                         }
                     }
 
@@ -211,8 +213,8 @@ const FeatureToolTip = (function _() {
          *      filterGeometries: (features, layer) => {
          *          const idList = [];
          *          return features.filter((f) => {
-         *              if (!idList.includes(f.geometry.properties.id)) {
-         *                  idList.push(f.geometry.properties.id);
+         *              if (!idList.includes(f.properties.id)) {
+         *                  idList.push(f.properties.id);
          *                  return f;
          *              }
          *          });

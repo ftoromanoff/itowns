@@ -69,7 +69,7 @@ function drawFeature(ctx, feature, extent, invCtxScale) {
 
     for (const geometry of feature.geometries) {
         if (Extent.intersectsExtent(geometry.extent, extent)) {
-            context.setGeometry(geometry);
+            // context.setGeometry(geometry);
             if (style.zoom.min > style.context.zoom || style.zoom.max <= style.context.zoom) {
                 return;
             }

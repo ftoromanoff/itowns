@@ -117,7 +117,8 @@ const CSVnVRTParser = (function _() {
 
                         if (layer.Field) {
                             for (let p = 0; p < layer.Field.length; p++) {
-                                geometry.properties[layer.Field[p]['@attributes'].name] = line[layer.Field[p]['@attributes'].pos];
+                                // geometry.properties[layer.Field[p]['@attributes'].name] = line[layer.Field[p]['@attributes'].pos];
+                                feature.properties[layer.Field[p]['@attributes'].name] = line[layer.Field[p]['@attributes'].pos];
                             }
                         }
 

@@ -91,7 +91,7 @@
                 source: earthquakeSource,
                 style: {
                     point: {
-                        color: function (p) { return p.alert; },
+                        color: function (p) { console.log(p); return p.alert; },
                         radius: function (p) { return p.mag; },
                         line: 'black',
                         width: 0.5,
