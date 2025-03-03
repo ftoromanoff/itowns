@@ -343,7 +343,7 @@ class PointCloudLayer extends GeometryLayer {
 
         if (this.octreeDepthLimit >= 0 && this.octreeDepthLimit < elt.depth) {
             markForDeletion(elt);
-            return;
+            return [];
         }
 
         // get object on which to measure distance
@@ -365,7 +365,7 @@ class PointCloudLayer extends GeometryLayer {
 
         if (!elt.visible) {
             markForDeletion(elt);
-            return;
+            return [];
         }
 
         elt.notVisibleSince = undefined;
@@ -413,6 +413,7 @@ class PointCloudLayer extends GeometryLayer {
                 for (const child of elt.children) {
                     markForDeletion(child);
                 }
+                return [];
             }
         }
     }
