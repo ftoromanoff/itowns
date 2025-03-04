@@ -1,20 +1,12 @@
 {
-    "include": [ "src/Main.js" ],
-    "exclude": [ "node_modules", "lib", "dist" ],
     "compilerOptions": {
         /* Type Checking */
         "strict": true,
         /* Modules */
         "baseUrl": ".",
-        "paths": {
-            "*": [ "src/*" ]
-        },
         "module": "ESNext",
         "moduleResolution": "bundler",
         /* Emit */
-        "declaration": true,
-        "emitDeclarationOnly": true,
-        "outDir": "types",
         /* JavaScript Support */
         "allowJs": true,
         "checkJs": false, // set to true for type checking of js files
