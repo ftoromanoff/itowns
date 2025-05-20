@@ -14,7 +14,7 @@
         </style>
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/lil-gui@0.19"></script>
     </head>
     <body>
         <div id="viewerDiv">
@@ -26,7 +26,7 @@
         <script type="text/javascript">
             itowns.proj4.defs('EPSG:3946', '+proj=lcc +lat_0=46 +lon_0=3 +lat_1=45.25 +lat_2=46.75 +x_0=1700000 +y_0=5200000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
 
-            var debugGui = new dat.GUI();
+            var debugGui = new lil.GUI();
             var viewerDiv = document.getElementById('viewerDiv');
             viewerDiv.style.display = 'block';
             var view = new itowns.View('EPSG:3946', viewerDiv);
