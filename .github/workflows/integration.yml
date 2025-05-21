@@ -156,67 +156,6 @@ jobs:
       - name: Run functional tests
         run: npm run test-functional
 
-
-  # Publish NPM package
-  publish:
-    name: Publish NPM package
-    if: ${{ github.ref == 'refs/heads/master' }}
-    needs: [finish-coverage, functional-tests]
-    runs-on: ubuntu-latest
-    permissions:
-        # id-token: write permission is required for npm provenance:
-        # https://docs.npmjs.com/generating-provenance-statements#publishing-packages-with-provenance-via-github-actions
-        id-token: write
-        # contents: write is required for git push
-        contents: write
-    steps:
-
-      - uses: actions/checkout@v4
-        with:
-          # fetch all branches
-          fetch-depth: 0
-
-      # Configure git user for later command induced commits
-      - uses: fregante/setup-git-user@v1
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-          registry-url: https://registry.npmjs.org/
-
-      - run: npm ci
-      - run: npm run prepare
-
-      - name: publish itowns@latest npm package
-        if: ${{ startsWith(github.event.head_commit.message, 'release v' ) }}
-        run: npm run publish-latest
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: publish itowns@next npm package (following a release)
-        if: ${{ startsWith(github.event.head_commit.message, 'release v' ) }}
-        run: |
-          git checkout next
-          git reset --hard master
-          npm run publish-next
-          git add .
-          git commit --amend --no-edit
-          git push -f
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: publish itowns@next npm package
-        if: ${{ !startsWith(github.event.head_commit.message, 'release v' ) }}
-        run: |
-          git checkout next
-          git merge master
-          npm run publish-next
-          git add .
-          git commit --amend --no-edit
-          git push
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
   # Deploy on itowns.github.io website
   deploy:
     name: Deploy to itowns.github.io
@@ -256,7 +195,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          external_repository: iTowns/itowns.github.io
+          external_repository: ftoromanoff/itowns.github.io
           publish_dir: ./itowns
           destination_dir: ./itowns
           publish_branch: master
@@ -271,7 +210,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
-          external_repository: iTowns/itowns.github.io
+          external_repository: ftoromanoff/itowns.github.io
           publish_dir: ./itowns
           destination_dir: ./itowns/dev
           publish_branch: master
