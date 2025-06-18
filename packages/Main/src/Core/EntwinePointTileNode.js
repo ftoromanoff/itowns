@@ -109,10 +109,6 @@ class EntwinePointTileNode extends PointCloudNode {
     }
 
     load() {
-        // Query octree/HRC if we don't have children potreeNode yet.
-        if (!this.octreeIsLoaded) {
-            this.loadOctree();
-        }
         let sourceFetcher = this.layer.source.fetcher;
         let sourceParse = this.layer.source.parse;
         let layerSource = this.layer.source;
