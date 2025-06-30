@@ -1,6 +1,7 @@
 import { Euler, MathUtils, Matrix4, Quaternion, Vector3 } from 'three';
 import proj4 from 'proj4';
 import type { ProjectionDefinition } from 'proj4/dist/lib/defs';
+import type Projection from 'proj4/dist/lib/Proj';
 import Coordinates from './Coordinates';
 
 const DEG2RAD = MathUtils.DEG2RAD;
@@ -34,7 +35,7 @@ type Attitude = Partial<EulerAngles> | Partial<PhotogrammetryAngles>;
 
 type QuaternionFunction = (coords: Coordinates, target?: Quaternion) => Quaternion;
 
-type ProjectionLike = ProjectionDefinition | string;
+type ProjectionLike = Projection | string
 type LCCProjection = { long0: number, lat0: number };
 type TMercProjection = { a: number, b: number, e?: number, long0: number };
 
@@ -410,11 +411,12 @@ export function quaternionFromEnuToCRS(
     target = new Quaternion(),
 ) {
     if (coordinates) { return quaternionFromEnuToCRS(crsOrProj)(coordinates, target); }
-    const proj = typeof crsOrProj === 'string' ?
-        proj4(crsOrProj).oProj as ProjectionDefinition :
+    const projection = typeof crsOrProj === 'string' ?
+        proj4(crsOrProj).oProj :
         crsOrProj;
-    const names = proj4.Proj.projections.get(proj.projName).names;
-    switch (names[0]) {
+    if (projection === undefined) { return; }
+    const proj = projection as ProjectionDefinition;
+    switch (projection.names[0]) {
         case 'Geocentric': return quaternionFromEnuToGeocent();
         case 'Lambert Tangential Conformal Conic Projection':
             return quaternionFromEnuToLCC(proj as LCCProjection);
@@ -447,11 +449,12 @@ export function quaternionFromCRSToEnu(
     target = new Quaternion(),
 ) {
     if (coordinates) { return quaternionFromCRSToEnu(crsOrProj)(coordinates, target); }
-    const proj = typeof crsOrProj === 'string' ?
-        proj4(crsOrProj).oProj as ProjectionDefinition :
+    const projection = typeof crsOrProj === 'string' ?
+        proj4(crsOrProj).oProj :
         crsOrProj;
-    const names = proj4.Proj.projections.get(proj.projName).names;
-    switch (names[0]) {
+    if (projection === undefined) { return; }
+    const proj = projection as ProjectionDefinition;
+    switch (projection.names[0]) {
         case 'Geocentric': return quaternionFromGeocentToEnu();
         case 'Lambert Tangential Conformal Conic Projection':
             return quaternionFromLCCToEnu(proj as LCCProjection);
