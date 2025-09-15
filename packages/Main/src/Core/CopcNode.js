@@ -160,7 +160,7 @@ class CopcNode extends PointCloudNode {
             await this.loadOctree();
         }
 
-        const origin = this.getCenter();
+        const rotation = this.getLocalRotation();
 
         const buffer = await this._fetch(this.entryOffset, this.entryLength);
         const geometry = await this.source.parser(buffer, {
@@ -169,7 +169,8 @@ class CopcNode extends PointCloudNode {
                 pointCount: this.numPoints,
             },
             out: {
-                origin,
+                origin: this.origin,
+                rotation,
             },
         });
 
