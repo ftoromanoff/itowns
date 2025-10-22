@@ -337,19 +337,19 @@ class PointCloudLayer extends GeometryLayer {
         this.root.clampOBB.copy(this.root.voxelOBB);
 
         const clampBBox = this.root.clampOBB.box3D;
-        if (clampBBox.min.z < this.zmax) {
-            clampBBox.max.z = Math.min(clampBBox.max.z, this.zmax);
+        if (clampBBox.min.z < this.source.zmax) {
+            clampBBox.max.z = Math.min(clampBBox.max.z, this.source.zmax);
         }
-        if (clampBBox.max.z > this.zmin) {
-            clampBBox.min.z = Math.max(clampBBox.min.z, this.zmin);
+        if (clampBBox.max.z > this.source.zmin) {
+            clampBBox.min.z = Math.max(clampBBox.min.z, this.source.zmin);
         }
 
         this.root.clampOBB.matrixWorldInverse = this.root.voxelOBB.matrixWorldInverse;
     }
 
     setElevationRange() {
-        this.minElevationRange = this.minElevationRange ?? this.zmin;
-        this.maxElevationRange = this.maxElevationRange ?? this.zmax;
+        this.minElevationRange = this.minElevationRange ?? this.source.zmin;
+        this.maxElevationRange = this.maxElevationRange ?? this.source.zmax;
     }
 
     preUpdate(context, changeSources) {

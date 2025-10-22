@@ -103,6 +103,9 @@ class CopcSource extends Source {
             this.info = metadata.info;
             this.eb = metadata.eb;
 
+            this.zmin = this.header.min[2];
+            this.zmax = this.header.max[2];
+
             this.spacing = this.info.spacing;
 
             proj4.defs('unknown', metadata.wkt);

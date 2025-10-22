@@ -49,9 +49,6 @@ class EntwinePointTileLayer extends PointCloudLayer {
 
         const resolve = this.addInitializationStep();
         this.whenReady = this.source.whenReady.then(() => {
-            this.zmin = this.source.boundsConforming[2];
-            this.zmax = this.source.boundsConforming[5];
-
             this.setElevationRange();
 
             this.root = new EntwinePointTileNode(0, 0, 0, 0, this.source, -1);
