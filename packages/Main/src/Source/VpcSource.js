@@ -71,6 +71,9 @@ class VpcSource extends Source {
                 }
                 this.crs = CRS.defsFromWkt(projsWkt2[0]);
 
+                const projsWkt = metadata.features.map(f => f.properties['proj:wkt2']);
+                // console.log(projsWkt);
+
                 /* Set  several object (MockSource) to mock the source that will need to be instantiated.
                  We don't want all child source to be instantiated at once as it will send the fetch request
                  (current architectural choice) thus we want to delay the instanciation of the child source
@@ -97,6 +100,7 @@ class VpcSource extends Source {
                         url,
                         boundsConforming: boundsConformings[i],
                         whenReady,
+                        crs: CRS.defsFromWkt(projsWkt[i]),
                         sId: i,
                     };
                     this.sources.push(mockSource);

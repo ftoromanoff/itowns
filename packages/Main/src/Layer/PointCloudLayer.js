@@ -210,6 +210,7 @@ class PointCloudLayer extends GeometryLayer {
     }
 
     setRootOBBes(min, max) {
+        console.log('setRootOBBes', this.source.crs, this.crs, this.test);
         let forward = (x => x);
         if (this.source.crs !== this.crs) {
             try {

@@ -81,25 +81,24 @@
             var vpcLayer, vpcSource;
 
             function onLayerReady() {
-                var lookAt = new THREE.Vector3();
-                var size = new THREE.Vector3();
+                var lookAt = vpcLayer.root.origin.toVector3();
 
-                const rootBbox = vpcLayer.root.children[0].bbox;
-                rootBbox.getSize(size);
-                rootBbox.getCenter(lookAt);
+                const size = new THREE.Vector3();
+                vpcLayer.root.voxelOBB.box3D.getSize(size);
 
-                view.camera3D.far = 20.0 * size.length();
-
-                controls.groundLevel = rootBbox.min.z;
-                var position = rootBbox.min.clone().add(
-                    size.multiply({ x: 0, y: 0, z: size.x / size.z })
+                controls.groundLevel = vpcLayer.minElevationRange;
+                var corner = new THREE.Vector3(...vpcLayer.source.boundsConforming.slice(0, 3));
+                var position = corner.clone().add(
+                    size.multiply({ x: 0, y: 0, z: (size.x / size.z) })
                 );
 
-                view.camera3D.position.copy(position);
-                view.camera3D.lookAt(lookAt);
-                view.camera3D.updateProjectionMatrix();
+                const camera = view.camera.camera3D;
+                camera.far = 10.0 * size.length();
+                camera.position.copy(position);
+                camera.lookAt(lookAt);
+                camera.updateProjectionMatrix();
 
-                view.notifyChange(vpcLayer);
+                view.notifyChange(camera);
 
                 debug.PointCloudDebug.initTools(view, vpcLayer, debugGui);
             }
