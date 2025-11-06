@@ -364,21 +364,22 @@ class PointCloudLayer extends GeometryLayer {
                     view: context.view,
                     priority,
                     redraw: true,
-                    earlyDropFunction: cmd => !cmd.requester.visible || !this.visible,
-                }).then((pts) => {
-                    elt.obj = pts;
+                    earlyDropFunction: cmd => true || !cmd.requester.visible || !this.visible,
+                })
+                    .then((pts) => {
+                        elt.obj = pts;
 
-                    // make sure to add it here, otherwise it might never
-                    // be added nor cleaned
-                    this.group.add(elt.obj);
-                    elt.obj.updateMatrixWorld(true);
-                }).catch((err) => {
-                    if (!err.isCancelledCommandException) {
-                        return err;
-                    }
-                }).finally(() => {
-                    elt.promise = null;
-                });
+                        // make sure to add it here, otherwise it might never
+                        // be added nor cleaned
+                        this.group.add(elt.obj);
+                        elt.obj.updateMatrixWorld(true);
+                    }).catch((err) => {
+                        if (!err.isCancelledCommandException) {
+                            return err;
+                        }
+                    }).finally(() => {
+                        elt.promise = null;
+                    });
             }
         }
 
