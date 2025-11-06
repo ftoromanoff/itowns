@@ -46,7 +46,7 @@ class CopcLayer extends PointCloudLayer {
             this.root = new CopcNode(0, 0, 0, 0, pageOffset, pageLength, this.source, -1, this.crs);
             this.setRootOBBes(cube.slice(0, 3), cube.slice(3, 6));
 
-            return this.root.loadOctree().then(resolve);
+            // return this.root.loadOctree().then(resolve);
         });
     }
 }

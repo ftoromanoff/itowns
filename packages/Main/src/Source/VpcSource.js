@@ -122,6 +122,7 @@ class VpcSource extends Source {
      * @param {object} source.url - The url of the source to instanciate.
      */
     instantiate(source) {
+        console.log('instantiate');
         let newSource;
         const url = source.url;
         let cachedSrc = cachedSources.get(url);

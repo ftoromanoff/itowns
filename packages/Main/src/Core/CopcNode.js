@@ -160,6 +160,7 @@ class CopcNode extends PointCloudNode {
      * @returns {Promise<THREE.BufferGeometry>}
      */
     async load() {
+        console.log('load');
         if (!this.octreeIsLoaded) {
             await this.loadOctree();
         }

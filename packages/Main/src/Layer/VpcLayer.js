@@ -5,12 +5,14 @@ import EntwinePointTileNode from 'Core/EntwinePointTileNode';
 import PointCloudLayer from 'Layer/PointCloudLayer';
 import OBB from 'Renderer/OBB';
 
+let compteur = 0;
+
 function _instantiateRootNode(source, crs) {
+    // console.log('_instantiateRootNode');
     let root;
     if (source.isCopcSource) {
         const { info } = source;
         const { pageOffset, pageLength } = info.rootHierarchyPage;
-        console.log('_instantiateRootNode', source, crs);
         root = new CopcNode(0, 0, 0, 0, pageOffset, pageLength, source, -1, crs);
         const test = {
             root,
@@ -20,7 +22,6 @@ function _instantiateRootNode(source, crs) {
         };
         PointCloudLayer.prototype.setRootOBBes.call(test, info.cube.slice(0, 3), info.cube.slice(3, 6));
     } else if (source.isEntwinePointTileSource) {
-        console.log('_instantiateRootNode', source, crs);
         root = new EntwinePointTileNode(0, 0, 0, 0, source, -1, crs);
         const test = {
             root,
@@ -133,13 +134,17 @@ class VpcLayer extends PointCloudLayer {
     }
 
     loadData(elt, context, layer, bbox) {
-        console.log('loadData', elt.waitingForSource);
         if (elt.waitingForSource) {
+            if (compteur > 10) { return []; }
+            compteur += 1;
             layer.source.instantiate(elt.source);
             elt.loadOctree
                 .then(eltLoaded => super.loadData(eltLoaded, context, layer, bbox))
                 .then(() => context.view.notifyChange(layer));
         } else {
+            if (compteur > 10) { return []; }
+            compteur += 1;
+            console.log('loadData !!!');
             return super.loadData(elt, context, layer, bbox);
         }
     }

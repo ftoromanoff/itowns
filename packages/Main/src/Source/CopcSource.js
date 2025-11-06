@@ -89,16 +89,19 @@ class CopcSource extends Source {
 
         this.colorDepth = config.colorDepth ?? 16;
 
-        const get = (/** @type {number} */ begin, /** @type {number} */ end) =>
-            this.fetcher(this.url, {
+        const get = (/** @type {number} */ begin, /** @type {number} */ end) => {
+            console.log('get');
+            return this.fetcher(this.url, {
                 ...this.networkOptions,
                 headers: {
                     ...this.networkOptions.headers,
                     range: `bytes=${begin}-${end - 1}`,
                 },
             }).then(buffer => new Uint8Array(buffer));
+        };
 
         this.whenReady = getHeaders(get).then((metadata) => {
+            console.log('getHeaders');
             this.header = metadata.header;
             this.info = metadata.info;
             this.eb = metadata.eb;
