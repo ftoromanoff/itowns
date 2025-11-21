@@ -207,7 +207,7 @@ export default async function load(buffer, options) {
                     z - origin[2],
                 ], quaternion);
 
-                // Ask what is it doign exactly ?
+                // What does that do exactly ?
                 // const index = toIndex(x, y, z);
                 const index = toIndex(position.x, position.y, position.z);
                 const count = grid[index]++;

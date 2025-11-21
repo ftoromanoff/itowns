@@ -57,13 +57,21 @@
 
             // Define crs projection that we will use (taken from https://epsg.io/3946, Proj4js section)
             itowns.CRS.defs('EPSG:2154', '+proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+            itowns.CRS.defs('EPSG:3947', '+proj=lcc +lat_0=47 +lon_0=3 +lat_1=46.25 +lat_2=47.75 +x_0=1700000 +y_0=6200000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs');
 
             const viewerDiv = document.getElementById('viewerDiv');
             viewerDiv.style.display = 'block';
 
             const debugGui = new lil();
 
-            const view = new itowns.View('EPSG:2154', viewerDiv);
+            // Arene
+            // const crs = 'EPSG:2154'
+            // const url = 'https://media.githubusercontent.com/media/itowns/iTowns2-sample-data/potreeData/pointclouds/potree2.0/Arene-1_L93';
+            // Brotli
+            const crs = 'EPSG:3947';
+            const url = 'https://raw.githubusercontent.com/bloc-in-bloc/sample-datas/main/Orvault-Potree2-brotli-3947';
+
+            const view = new itowns.View(crs, viewerDiv);
             const controls = new itowns.PlanarControls(view);
             setupLoadingScreen(viewerDiv, view);
             view.mainLoop.gfxEngine.renderer.setClearColor(0xcccccc);
@@ -71,8 +79,8 @@
             // Configure Point Cloud layer
             const source = new itowns.Potree2Source({
                     file: 'metadata.json',
-                    url: 'https://media.githubusercontent.com/media/itowns/iTowns2-sample-data/potreeData/pointclouds/potree2.0/Arene-1_L93',
-                    crs: 'EPSG:2154',
+                    url,
+                    crs,
                 });
 
             const name = source.url.split('/').pop();
