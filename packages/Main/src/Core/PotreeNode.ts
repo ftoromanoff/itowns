@@ -47,9 +47,7 @@ export function computeChildBBox(voxelBBox: THREE.Box3, childIndex: number) {
     return childVoxelBBox;
 }
 
-class PotreeNode extends PointCloudNode {
-    source: PotreeSource;
-
+export abstract class PotreeNodeBase extends PointCloudNode {
     index: number;
 
     childrenBitField: number;
@@ -59,9 +57,8 @@ class PotreeNode extends PointCloudNode {
 
     private _hierarchyKey: string | undefined;
 
-    constructor(depth: number, index: number, numPoints = 0, childrenBitField = 0, source: PotreeSource, crs: string) {
+    constructor(depth: number, index: number, numPoints = 0, childrenBitField = 0, source: { baseurl: string }, crs: string) {
         super(depth, numPoints);
-        this.source = source;
 
         this.childrenBitField = childrenBitField;
 
@@ -74,10 +71,6 @@ class PotreeNode extends PointCloudNode {
 
     get octreeIsLoaded() {
         return !(this.childrenBitField && this.children.length === 0);
-    }
-
-    get url() {
-        return `${this.baseurl}/${this.hierarchyKey}.${this.source.extension}`;
     }
 
     get id() {
@@ -94,7 +87,7 @@ class PotreeNode extends PointCloudNode {
         return this._hierarchyKey;
     }
 
-    createChildAABB(childNode: PotreeNode, childIndex: number) {
+    createChildAABB(childNode: this, childIndex: number) {
         childNode.voxelOBB.copy(this.voxelOBB);
         childNode.voxelOBB.box3D = computeChildBBox(this.voxelOBB.box3D, childIndex);
 
@@ -110,6 +103,19 @@ class PotreeNode extends PointCloudNode {
 
         childNode.voxelOBB.matrixWorldInverse = this.voxelOBB.matrixWorldInverse;
         childNode.clampOBB.matrixWorldInverse = this.clampOBB.matrixWorldInverse;
+    }
+}
+
+class PotreeNode extends PotreeNodeBase {
+    source: PotreeSource;
+
+    constructor(depth: number, index: number, numPoints = 0, childrenBitField = 0, source: PotreeSource, crs: string) {
+        super(depth, index, numPoints, childrenBitField, source, crs);
+        this.source = source;
+    }
+
+    get url() {
+        return `${this.baseurl}/${this.hierarchyKey}.${this.source.extension}`;
     }
 
     async load(networkOptions = this.source.networkOptions) {
