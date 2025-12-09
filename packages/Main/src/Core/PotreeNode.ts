@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import PointCloudNode from 'Core/PointCloudNode';
+import type PotreeSource from 'Source/PotreeSource';
 
 // Create an A(xis)A(ligned)B(ounding)B(ox) for the child `childIndex` of one aabb.
 // (PotreeConverter protocol builds implicit octree hierarchy by applying the same
 // subdivision algo recursively)
 const dHalfLength = new THREE.Vector3();
 
-function computeChildBBox(voxelBBox, childIndex) {
+export function computeChildBBox(voxelBBox: THREE.Box3, childIndex: number) {
     // Code inspired from potree
     const childVoxelBBox = voxelBBox.clone();
     voxelBBox.getCenter(childVoxelBBox.max);
@@ -47,8 +48,21 @@ function computeChildBBox(voxelBBox, childIndex) {
 }
 
 class PotreeNode extends PointCloudNode {
-    constructor(depth, index, numPoints = 0, childrenBitField = 0, source, crs) {
-        super(depth, numPoints, source);
+    source: PotreeSource;
+
+    index: number;
+
+    childrenBitField: number;
+    baseurl: string;
+    offsetBBox?: THREE.Box3;
+    crs: string;
+
+    private _hierarchyKey: string | undefined;
+
+    constructor(depth: number, index: number, numPoints = 0, childrenBitField = 0, source: PotreeSource, crs: string) {
+        super(depth, numPoints);
+        this.source = source;
+
         this.childrenBitField = childrenBitField;
 
         this.index = index;
@@ -70,17 +84,17 @@ class PotreeNode extends PointCloudNode {
         return this.hierarchyKey;
     }
 
-    get hierarchyKey() {
+    get hierarchyKey(): string {
         if (this._hierarchyKey != undefined) { return this._hierarchyKey; }
         if (this.depth === 0) {
             this._hierarchyKey = 'r';
         } else {
-            this._hierarchyKey = this.parent.hierarchyKey + this.index;
+            this._hierarchyKey = `${this.parent?.hierarchyKey}${this.index}`;
         }
         return this._hierarchyKey;
     }
 
-    createChildAABB(childNode, childIndex) {
+    createChildAABB(childNode: PotreeNode, childIndex: number) {
         childNode.voxelOBB.copy(this.voxelOBB);
         childNode.voxelOBB.box3D = computeChildBBox(this.voxelOBB.box3D, childIndex);
 
@@ -98,45 +112,50 @@ class PotreeNode extends PointCloudNode {
         childNode.clampOBB.matrixWorldInverse = this.clampOBB.matrixWorldInverse;
     }
 
-    load() {
-        return super.load();
+    async load(networkOptions = this.source.networkOptions) {
+        // Query octree/HRC if we don't have children yet.
+        if (!this.octreeIsLoaded) {
+            await this.loadOctree();
+        }
+
+        const file = await this.source.fetcher(this.url, networkOptions);
+        return this.source.parser(file, { in: this });
     }
 
-    loadOctree() {
+    async loadOctree() {
         this.offsetBBox = new THREE.Box3().setFromArray(this.source.boundsConforming);// Only for Potree1
         const octreeUrl = `${this.baseurl}/${this.hierarchyKey}.${this.source.extensionOctree}`;
-        return this.source.fetcher(octreeUrl, this.source.networkOptions)
-            .then((blob) => {
-                const view = new DataView(blob);
-                const stack = [];
-                let offset = 0;
+        const blob = await this.source.fetcher(octreeUrl, this.source.networkOptions);
+        const view = new DataView(blob);
+        const stack = [];
+        let offset = 0;
 
-                this.childrenBitField = view.getUint8(0); offset += 1;
-                this.numPoints = view.getUint32(1, true); offset += 4;
+        this.childrenBitField = view.getUint8(0); offset += 1;
+        this.numPoints = view.getUint32(1, true); offset += 4;
 
-                stack.push(this);
+        stack.push(this);
 
-                while (stack.length && offset < blob.byteLength) {
-                    const snode = stack.shift();
-                    // look up 8 children
-                    for (let indexChild = 0; indexChild < 8; indexChild++) {
-                        // does snode have a #indexChild child ?
-                        if (snode.childrenBitField & (1 << indexChild) && (offset + 5) <= blob.byteLength) {
-                            const childrenBitField = view.getUint8(offset); offset += 1;
-                            const numPoints = view.getUint32(offset, true) || this.numPoints; offset += 4;
-                            const child = new PotreeNode(snode.depth + 1, indexChild, numPoints, childrenBitField, this.source, this.crs);
-                            snode.add(child, indexChild);
-                            child.offsetBBox = computeChildBBox(child.parent.offsetBBox, indexChild);// For Potree1 Parser
-                            if ((child.depth % this.source.hierarchyStepSize) == 0) {
-                                child.baseurl = `${this.baseurl}/${child.hierarchyKey.substring(1)}`;
-                            } else {
-                                child.baseurl = this.baseurl;
-                            }
-                            stack.push(child);
-                        }
+        while (stack.length && offset < blob.byteLength) {
+            const snode = stack.shift() as PotreeNode;
+            // look up 8 children
+            for (let indexChild = 0; indexChild < 8; indexChild++) {
+                // does snode have a #indexChild child ?
+                if (snode.childrenBitField & (1 << indexChild) && (offset + 5) <= blob.byteLength) {
+                    const childrenBitField = view.getUint8(offset); offset += 1;
+                    const numPoints = view.getUint32(offset, true) || this.numPoints; offset += 4;
+                    const child = new PotreeNode(snode.depth + 1, indexChild, numPoints, childrenBitField, this.source, this.crs);
+
+                    snode.add(child, indexChild);
+                    child.offsetBBox = computeChildBBox(child.parent!.offsetBBox!, indexChild);// For Potree1 Parser
+                    if ((child.depth % this.source.hierarchyStepSize) == 0) {
+                        child.baseurl = `${this.baseurl}/${child.hierarchyKey.substring(1)}`;
+                    } else {
+                        child.baseurl = this.baseurl;
                     }
+                    stack.push(child);
                 }
-            });
+            }
+        }
     }
 }
 
