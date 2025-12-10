@@ -118,16 +118,6 @@ class PotreeNode extends PotreeNodeBase {
         return `${this.baseurl}/${this.hierarchyKey}.${this.source.extension}`;
     }
 
-    async load(networkOptions = this.source.networkOptions) {
-        // Query octree/HRC if we don't have children yet.
-        if (!this.octreeIsLoaded) {
-            await this.loadOctree();
-        }
-
-        const file = await this.source.fetcher(this.url, networkOptions);
-        return this.source.parser(file, { in: this });
-    }
-
     async loadOctree() {
         this.offsetBBox = new THREE.Box3().setFromArray(this.source.boundsConforming);// Only for Potree1
         const octreeUrl = `${this.baseurl}/${this.hierarchyKey}.${this.source.extensionOctree}`;

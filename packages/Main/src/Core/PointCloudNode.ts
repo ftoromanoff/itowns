@@ -12,6 +12,9 @@ export interface PointCloudSource {
     crs: string;
     zmin: number;
     zmax: number;
+    fetcher: (url: string, options?: RequestInit) => Promise<ArrayBuffer>;
+    parser: (data: ArrayBuffer, options: { in: PointCloudNode }) => THREE.BufferGeometry;
+    networkOptions: RequestInit;
 }
 
 type ExtentedOBB = OBB & { matrixWorldInverse: THREE.Matrix4 };
@@ -76,7 +79,6 @@ abstract class PointCloudNode extends THREE.EventDispatcher {
 
     abstract get id(): string;
     abstract get url(): string;
-    abstract load(networkOptions?: RequestInit): Promise<THREE.BufferGeometry>;
     abstract loadOctree(): Promise<void>;
 
     get pointSpacing() {
@@ -116,6 +118,21 @@ abstract class PointCloudNode extends THREE.EventDispatcher {
             this._rotation = OrientationUtils.quaternionFromCRSToCRS(this.crs, this.source.crs)(this.origin);
         }
         return this._rotation;
+    }
+
+    networkOptions() {
+        return this.source.networkOptions;
+    }
+
+    async load() {
+        // Query octree/HRC if we don't have children yet.
+        if (!this.octreeIsLoaded) {
+            await this.loadOctree();
+        }
+        return this.source.fetcher(this.url, this.networkOptions())
+            .then(file => this.source.parser(file, {
+                in: this,
+            }));
     }
 
     setOBBes(min: number[], max: number[]) {

@@ -117,8 +117,6 @@ function parseAttributes(jsonAttributes: Potree2Metadata['attributes']) {
 
 class Potree2Source extends Source {
     file: string;
-    fetcher: (url: string, options?: RequestInit) => Promise<ArrayBuffer>;
-    parser: typeof Potree2BinParser.parse;
     extension: 'bin';
 
     // Properties initialized after fetching metadata

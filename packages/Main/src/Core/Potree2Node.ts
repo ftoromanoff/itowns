@@ -89,16 +89,12 @@ class Potree2Node extends PotreeNodeBase {
     }
 
     async load() {
-        // Query octree/HRC if we don't have children yet.
-        if (!this.octreeIsLoaded) {
-            await this.loadOctree();
-        }
-
-        const file = await this.source.fetcher(this.url, this.networkOptions());
-        const data = await this.source.parser(file, { in: this });
-        this.loaded = true;
-        this.loading = false;
-        return data.geometry;
+        return super.load()
+            .then((data) => {
+                this.loaded = true;
+                this.loading = false;
+                return data;
+            });
     }
 
     loadOctree() {
