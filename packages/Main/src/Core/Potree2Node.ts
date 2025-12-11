@@ -33,24 +33,42 @@ of the authors and should not be interpreted as representing official policies,
     either expressed or implied, of the FreeBSD Project.
  */
 
-import PotreeNode from 'Core/PotreeNode';
+import type Potree2Source from 'Source/Potree2Source';
+import { PotreeNodeBase } from 'Core/PotreeNode';
 
 const NODE_TYPE = {
     NORMAL: 0,
     LEAF: 1,
     PROXY: 2,
-};
+} as const;
 
-class Potree2Node extends PotreeNode {
-    constructor(numPoints = 0, childrenBitField = 0, source, crs) {
-        super(numPoints, childrenBitField, source, crs);
+type NodeType = typeof NODE_TYPE[keyof typeof NODE_TYPE];
+
+class Potree2Node extends PotreeNodeBase {
+    source: Potree2Source;
+
+    loaded: boolean;
+    loading: boolean;
+
+    // Properties initialized after loading hierarchy
+    byteOffset!: bigint;
+    byteSize!: bigint;
+    hierarchyByteOffset!: bigint;
+    hierarchyByteSize!: bigint;
+    nodeType!: NodeType;
+
+    constructor(depth: number, index: number, numPoints = 0, childrenBitField = 0, source: Potree2Source, crs: string) {
+        super(depth, index, numPoints, childrenBitField, source, crs);
+        this.source = source;
+
+        this.loaded = false;
+        this.loading = false;
     }
 
     get url() {
         return `${this.baseurl}/octree.bin`;
     }
 
-    // Beware: you should call this method after the hierarchy is loaded
     networkOptions(byteOffset = this.byteOffset, byteSize = this.byteSize) {
         const first = byteOffset;
         const last = first + byteSize - 1n;
@@ -75,7 +93,7 @@ class Potree2Node extends PotreeNode {
             .then((data) => {
                 this.loaded = true;
                 this.loading = false;
-                return data.geometry;
+                return data;
             });
     }
 
@@ -93,7 +111,7 @@ class Potree2Node extends PotreeNode {
         this.parseHierarchy(buffer);
     }
 
-    parseHierarchy(buffer) {
+    parseHierarchy(buffer: ArrayBuffer) {
         const view = new DataView(buffer);
 
         const bytesPerNode = 22;
@@ -103,10 +121,10 @@ class Potree2Node extends PotreeNode {
         stack.push(this);
 
         for (let indexNode = 0; indexNode < numNodes; indexNode++) {
-            const current = stack.shift();
+            const current = stack.shift() as Potree2Node;
             const offset = indexNode * bytesPerNode;
 
-            const type = view.getUint8(offset + 0);
+            const type = view.getUint8(offset + 0) as NodeType;
             const childMask = view.getUint8(offset + 1);
             const numPoints = view.getUint32(offset + 2, true);
             const byteOffset = view.getBigInt64(offset + 6, true);
@@ -149,8 +167,7 @@ class Potree2Node extends PotreeNode {
                     continue;
                 }
 
-                const child = new Potree2Node(numPoints, childMask, this.source, this.crs);
-
+                const child = new Potree2Node(current.depth + 1, childIndex, numPoints, childMask, this.source, this.crs);
                 current.add(child, childIndex);
                 stack.push(child);
             }
