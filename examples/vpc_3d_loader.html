@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Itowns - Entwine 3D loader</title>
+        <title>Itowns - Vpc 3D loader</title>
 
         <script type="importmap">
         {
@@ -11,8 +11,8 @@
                 "GuiTools": "./jsm/GUI/GuiTools.js",
                 "LoadingScreen": "./jsm/GUI/LoadingScreen.js",
                 "itowns_widgets": "../dist/itowns_widgets.js",
-                "three": "https://unpkg.com/three@0.174.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.174.0/examples/jsm/",
+                "three": "https://unpkg.com/three@0.182.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.182.0/examples/jsm/",
                 "dat": "https://unpkg.com/dat.gui@0.7.9/build/dat.gui.module.js"
             }
         }
@@ -112,7 +112,6 @@
                     opacity: 0.9
                 });
 
-                
                 itowns.View.prototype.addLayer.call(view, vpcLayer).then(onLayerReady);
 
             }
