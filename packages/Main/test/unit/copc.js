@@ -32,11 +32,14 @@ describe('COPC', function () {
     describe('Copc Layer', function () {
         it('instanciates a layer', (done) => {
             const layer = new CopcLayer('copc', { source, crs: 'EPSG:4978' });
-            layer.whenReady
+            assert.ok(layer.isCopcLayer);
+            layer.startup()
                 .then(() => {
                     assert.equal(source.zmin, source.header.min[2]);
                     assert.ok(layer.root.isCopcNode);
-                    assert.ok(layer.root.children.length > 0);
+                    // loadOctree() is now called during the load
+                    // assert.ok(layer.root.children.length > 0);
+                    assert.ok(layer.object3d.children.indexOf(layer.root.clampOBB) >= 0);
                     done();
                 }).catch(done);
         });
