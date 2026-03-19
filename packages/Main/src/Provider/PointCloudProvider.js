@@ -42,6 +42,7 @@ export default {
 
             points.layer = layer;
             points.userData.node = node;
+            points.visible = false;
             return points;
         });
     },

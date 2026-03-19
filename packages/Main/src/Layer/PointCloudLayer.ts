@@ -4,6 +4,7 @@ import PointsMaterial, { PNTS_MODE } from 'Renderer/PointsMaterial';
 import Picking from 'Core/Picking';
 
 import type PointCloudNode from 'Core/PointCloudNode';
+import { Layer } from 'Main';
 
 const point = new THREE.Vector3();
 const bboxMesh = new THREE.Mesh();
@@ -120,9 +121,15 @@ function computeScreenSpaceError(
     return computeSSEPerspective(context, pointSize, pointSpacing, distance);
 }
 
-function markForDeletion(elt: PointCloudNode) {
+function markForDeletion(elt: PointCloudNode, layer: PointCloudLayer) {
     if (elt.obj) {
         elt.obj.visible = false;
+        console.log(elt);
+        layer.dispatchEvent({
+            type: 'node-visibility-change',
+            tile: elt,
+            visible: false,
+        });
     }
 
     if (!elt.notVisibleSince) {
@@ -131,7 +138,7 @@ function markForDeletion(elt: PointCloudNode) {
         elt.sse = -1;
     }
     for (const child of elt.children) {
-        markForDeletion(child);
+        markForDeletion(child, layer);
     }
 }
 
@@ -374,7 +381,7 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
         // only load geometry if this elements has points
         if (elt.numPoints !== 0) {
             if (elt.obj) {
-                elt.obj.visible = true;
+                // elt.obj.visible = true;
             } else if (!elt.promise) {
                 const distance = Math.max(0.001, distanceToCamera);
                 // Increase priority of nearest node
@@ -393,7 +400,7 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
                     earlyDropFunction: cmd => !cmd.requester.visible || !this.visible,
                 }).then((pts: THREE.Points) => {
                     elt.obj = pts;
-                    elt.obj.visible = false;
+                    // elt.obj.visible = false;
                     // make sure to add it here, otherwise it might never
                     // be added nor cleaned
                     this.group.add(elt.obj);
@@ -422,7 +429,7 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
                 return elt.children;
             } else {
                 for (const child of elt.children) {
-                    markForDeletion(child);
+                    markForDeletion(child, this);
                 }
                 return [];
             }
@@ -441,10 +448,10 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
      * @returns The child nodes to update or [] if there is none.
      */
     update(context: Context, layer: this, elt: PointCloudNode): PointCloudNode[] {
-        elt.visible = false;
+        // elt.visible = false;
 
         if (this.octreeDepthLimit >= 0 && this.octreeDepthLimit < elt.depth) {
-            markForDeletion(elt);
+            markForDeletion(elt, layer);
             return [];
         }
 
@@ -462,7 +469,7 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
         elt.visible = context.camera.isBox3Visible(bbox, object3d.matrixWorld);
 
         if (!elt.visible) {
-            markForDeletion(elt);
+            markForDeletion(elt, layer);
             return [];
         }
 
@@ -477,6 +484,37 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
 
     postUpdate() {
         this.displayedCount = 0;
+        const stack = [this.root];
+
+        while (stack.length) {
+            const elt = stack.shift();
+            console.log(elt.id, elt.visible, 'sse:', elt.sse);
+
+            if (elt.visible) {
+                if (elt.obj) {
+                    if (elt.obj.visible === false) {
+                        console.log('visibility');
+                        elt.obj.visible = true;
+                        this.dispatchEvent({
+                            type: 'node-visibility-change',
+                            tile: elt,
+                            visible: true,
+                        });
+                    }
+                }
+
+                if (elt.sse >= 1) {
+                    console.log(elt);
+                    for (const child of elt.children) {
+                        if (child.visible) {
+                            stack.push(child);
+                            console.log('Child', child.id, child.visible, child.sse);
+                        }
+                    }
+                }
+            }
+        }
+
         for (const pts of this.group.children as THREE.Points[]) {
             if (pts.visible) {
                 const count = pts.geometry.attributes.position.count;
@@ -519,9 +557,9 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
             }
         }
 
-        for (const pts of this.group.children as THREE.Points[]) {
-            this.setNodeVisible(pts.userData.node, pts.visible);
-        }
+        // for (const pts of this.group.children as THREE.Points[]) {
+        //     this.setNodeVisible(pts.userData.node, pts.visible);
+        // }
 
         this.dispatchEvent({ type: 'post-update' });
     }
