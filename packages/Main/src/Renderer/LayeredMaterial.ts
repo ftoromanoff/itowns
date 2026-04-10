@@ -122,10 +122,10 @@ function updateLayersUniformsForType<Type extends 'c' | 'e'>(
         for (
             let i = 0;
             i < tile.textures.length && count < max;
-            ++i, ++count
+            ++i
         ) {
             const texture = tile.textures[i];
-            if (!texture) { continue; }
+            if (!texture.isTexture) { continue; }
 
             textureSetId += `${texture.id}.`;
             uOffsetScales[count] = tile.offsetScales[i];
@@ -144,6 +144,7 @@ function updateLayersUniformsForType<Type extends 'c' | 'e'>(
                 uTextureCount.value = 0;
                 return;
             }
+            ++count;
         }
     }
 
