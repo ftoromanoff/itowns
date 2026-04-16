@@ -255,10 +255,12 @@ class Layer extends THREE.EventDispatcher {
         return data;
     }
 
-    getData(from, to) {
+    async getData(from, to) {
         const key = this.source.getDataKey(this.source.isVectorSource ? to : from);
         let data = this.cache.get(key);
         if (!data) {
+            // const feat = await this.source.loadData(from, this);
+            // data = await this.convert(feat, to);
             data = this.source.loadData(from, this)
                 .then(feat => this.convert(feat, to), (err) => {
                     throw err;

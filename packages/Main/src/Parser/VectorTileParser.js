@@ -131,29 +131,31 @@ function readPBF(file, options) {
     // Only if the layer.origin is top
     const y = options.in.isInverted ? options.extent.row : (1 << z) - options.extent.row - 1;
 
-    const vFeature0 = vectorTile.layers[vtLayerNames[0]];
-    // TODO: verify if size is correct because is computed with only one feature (vFeature0).
-    const size = vFeature0.extent * 2 ** z;
+    const extentSet = new Set(Object.values(vectorTile.layers).map(vtLayer => vtLayer.extent));
+    if (extentSet.size !== 1) {
+        throw new Error('vectorTile Extent not supported');
+    }
+    const extent = Array.from(extentSet)[0];
+    const size = extent * 2 ** z;
     const center = -0.5 * size;
 
     collection.scale.set(globalExtent.x / size, -globalExtent.y / size, 1);
-    collection.position.set(vFeature0.extent * x + center, vFeature0.extent * y + center, 0).multiply(collection.scale);
+    collection.position.set(extent * x + center, extent * y + center, 0).multiply(collection.scale);
     collection.updateMatrixWorld();
 
-    let styleLayers = options.in.layers;
-    if (!styleLayers) {
-        styleLayers = {};
-        vtLayerNames.forEach((vtLayerName, i) => {
-            styleLayers[vtLayerName] = [{
+    let vtLayers = options.in.layers;
+    if (!vtLayers) {
+        vtLayers = {};
+        vtLayerNames.forEach((vtLayerName) => {
+            vtLayers[vtLayerName] = [{
                 id: vtLayerName,
-                order: i,
                 filterExpression: { filter: () => true },
             }];
         });
     }
 
     vtLayerNames.forEach((vtLayerName) => {
-        if (!styleLayers[vtLayerName]) { return; }
+        if (!vtLayers[vtLayerName]) { return; }
 
         const vectorTileLayer = vectorTile.layers[vtLayerName];
 
@@ -162,17 +164,14 @@ function readPBF(file, options) {
             vtFeature.tileNumbers = { x, y: options.extent.row, z };
 
             // Find layers where this vtFeature is used
-            const layers = styleLayers[vtLayerName]
+            const layers = vtLayers[vtLayerName]
                 .filter(l => l.filterExpression.filter({ zoom: z }, vtFeature));
 
             for (const layer of layers) {
                 const feature = collection.requestFeatureById(layer.id, vtFeature.type - 1);
                 feature.id = layer.id;
-                feature.order = layer.order;
-                feature.style = options.in.styles?.[feature.id];
                 vtFeatureToFeatureGeometry(vtFeature, feature);
             }
-
 
             /*
             // This optimization is not fully working and need to be reassessed
@@ -182,14 +181,14 @@ function readPBF(file, options) {
                 if (!feature) {
                     feature = collection.requestFeatureById(layer.id, vtFeature.type - 1);
                     feature.id = layer.id;
-                    feature.order = layer.order;
-                    feature.style = options.in.styles[feature.id];
+                    // feature.order = layer.order;
+                    // feature.style = options.in.vtStyles[feature.id];
                     vtFeatureToFeatureGeometry(vtFeature, feature);
                 } else if (!collection.features.find(f => f.id === layer.id)) {
                     feature = collection.newFeatureByReference(feature);
                     feature.id = layer.id;
-                    feature.order = layer.order;
-                    feature.style = options.in.styles[feature.id];
+                    // feature.order = layer.order;
+                    // feature.style = options.in.vtStyles[feature.id];
                 }
             }
             */
@@ -197,10 +196,8 @@ function readPBF(file, options) {
     });
 
     collection.removeEmptyFeature();
-    // TODO Some vector tiles are already sorted
-    collection.features.sort((a, b) => a.order - b.order);
     // TODO verify if is needed to updateExtent for previous features.
-    collection.updateExtent();
+    collection.updateExtent();// why to update Extent when it's overide next line?
     collection.extent = options.extent;
     collection.isInverted = options.in.isInverted;
     return Promise.resolve(collection);
@@ -220,11 +217,8 @@ export default {
      *
      * @param {Object} options - Options controlling the parsing {@link ParsingOptions}.
      *
-     * @param {Object} options.in - Object containing all styles,
-     * layers and informations data, see {@link InformationsData}.
-     *
-     * @param {Object} options.in.styles - Object containing subobject with
-     * informations on a specific style layer. Styles available is by `layer.id` and by zoom.
+     * @param {Object} options.in - Object containing layers and informations data,
+     * see {@link InformationsData}.
      *
      * @param {Object} options.in.layers - Object containing subobject with
      *

@@ -478,6 +478,7 @@ export class FeatureCollection extends THREE.Object3D {
     requestFeatureById(id, type) {
         return this.requestFeature(type, feature => feature.id === id);
     }
+
     /**
      * Add a new feature with references to all properties.
      * It allows to have features with different styles

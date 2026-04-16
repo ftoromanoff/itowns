@@ -75,7 +75,7 @@ class VectorTilesSource extends TMSSource {
         const ffilter = source.filter || (() => true);
         this.urls = [];
         this.layers = {};
-        this.styles = {};
+        this._mvtLayerStyle = {};
         let promise;
         this.isVectorTileSource = true;
 
@@ -109,27 +109,29 @@ class VectorTilesSource extends TMSSource {
 
             return mvtStyle;
         }).then((mvtStyle) => {
-            mvtStyle.layers.forEach((layer, order) => {
-                layer.sourceUid = this.uid;
-                if (layer.type === 'background') {
-                    this.backgroundLayer = layer;
-                } else if (ffilter(layer)) {
-                    if (layer['source-layer'] === undefined) {
-                        getPropertiesFromRefLayer(mvtStyle.layers, layer);
+            console.log(mvtStyle);
+            mvtStyle.layers.forEach((vtLayer, order) => {
+                vtLayer.order = order;
+                this._mvtLayerStyle[vtLayer.id] = vtLayer;
+                vtLayer.sourceUid = this.uid;
+                if (vtLayer.type === 'background') {
+                    this.backgroundLayer = vtLayer;
+                } else if (ffilter(vtLayer)) {
+                    if (vtLayer['source-layer'] === undefined) {
+                        getPropertiesFromRefLayer(mvtStyle.layers, vtLayer);
                     }
-                    const style = StyleOptions.setFromVectorTileLayer(layer, this.sprites, this.symbolToCircle);
-                    this.styles[layer.id] = style;
 
-                    if (!this.layers[layer['source-layer']]) {
-                        this.layers[layer['source-layer']] = [];
+                    if (!this.layers[vtLayer['source-layer']]) {
+                        this.layers[vtLayer['source-layer']] = [];
                     }
-                    this.layers[layer['source-layer']].push({
-                        id: layer.id,
-                        order,
-                        filterExpression: featureFilter(layer.filter),
+                    this.layers[vtLayer['source-layer']].push({
+                        id: vtLayer.id,
+                        filterExpression: featureFilter(vtLayer.filter),
                     });
                 }
             });
+
+            console.log(this.layers);
 
             if (this.url == '.') {
                 const TMSUrlList = Object.values(mvtStyle.sources).map((sourceVT) => {
@@ -176,10 +178,26 @@ class VectorTilesSource extends TMSSource {
         let features = cache.get(key);
         if (!features) {
             // otherwise fetch/parse the data
-            features = Promise.all(this.urls.map(url =>
-                this.fetcher(this.urlFromExtent(extent, url), this.networkOptions)
-                    .then(file => this.parser(file, { out, in: this, extent }))))
-                .then(collections => mergeCollections(collections))
+            features = Promise.all(this.urls.map((url) => {
+                const urlFromExtent = this.urlFromExtent(extent, url);
+                return this.fetcher(urlFromExtent, this.networkOptions)
+                    .then(file => this.parser(file, { out, in: this, extent }));
+            }))
+                .then((collections) => {
+                    // console.log(this._mvtLayerStyle);
+                    const collection = mergeCollections(collections);
+                    collection.features.forEach((f) => {
+                        const vtLayerStyle = this._mvtLayerStyle[f.id];
+                        f.style = StyleOptions.setFromVectorTileLayer(vtLayerStyle, this.sprites, this.symbolToCircle);
+                        // TODO Ordering of layers and slots properties ?
+                        f.order = this._mvtLayerStyle[f.id].order;
+                    });
+                    // console.log(collection.features);
+                    // console.log(collection.features.map(f => f.id));
+                    // console.log(collection.features.filter(f => f.id === 'admin-2-boundaries'));
+                    collection.features.sort((a, b) => a.order - b.order);
+                    return collection;
+                })
                 .catch(err => this.handlingError(err));
 
             cache.set(key, features);

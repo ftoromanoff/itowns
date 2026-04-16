@@ -484,10 +484,13 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
     }
 
     postUpdate() {
+        console.log('###postUpdate')
         const visibleLastUpdate = this._visibleNodes;
         this._visibleNodes = new Set();
         this.displayedCount = 0;
 
+        let minElev = 9999;
+        let maxElev = -9999;
         // Push visible nodes until the point budget is reached
         while (this._candidateNodes.length > 0) {
             const node = this._candidateNodes.pop() as PointCloudNode;
@@ -495,6 +498,17 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
                 this._candidateNodes.push(node);
                 break;
             }
+
+            if (node.obj) {
+                console.log('node.obj', node.obj?.geometry.boundingBox.min.z, node.obj?.geometry.boundingBox.max.z);
+                minElev = Math.min(minElev, node.obj?.geometry.boundingBox.min.z);
+                maxElev = Math.max(maxElev, node.obj?.geometry.boundingBox.max.z);
+            } else {
+                console.log('node.obj ELSE');
+                minElev = Math.min(minElev, node.clampOBB.box3D.min.z);
+                maxElev = Math.max(maxElev, node.clampOBB.box3D.max.z);
+            }
+
             this.displayedCount += node.numPoints;
             this._visibleNodes.add(node);
             node.visible = true;
@@ -503,6 +517,8 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
                 this.setNodeVisible(node, true);
             }
         }
+
+        console.log(minElev, maxElev);
 
         const nonVisibleNodes = new Set<PointCloudNode>();
         // Hide remaining visible nodes that didn't fit in the budget
@@ -534,6 +550,8 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
                 this.dispatchEvent({ type: 'dispose-model', scene: obj, tile: obj.userData.node });
             }
         }
+
+        console.log('postUpdate END')
 
         this.dispatchEvent({ type: 'post-update' });
     }

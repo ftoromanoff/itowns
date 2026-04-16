@@ -147,16 +147,27 @@ class Source {
      * @param      {FeatureBuildingOptions|Layer}  out     The feature returned options
      * @return     {FeatureCollection|Texture}  The parsed data.
      */
-    loadData(extent, out) {
+    async loadData(extent, out) {
         const cache = this._featuresCaches[out.crs];
         const key = this.getDataKey(extent);
         // try to get parsed data from cache
         let features = cache.get(key);
         if (!features) {
             // otherwise fetch/parse the data
-            features = this.fetcher(this.urlFromExtent(extent), this.networkOptions)
-                .then(file => this.parser(file, { out, in: this, extent }))
-                .catch(err => this.handlingError(err));
+            const urlFromExtent = this.urlFromExtent(extent);
+            const file = await this.fetcher(urlFromExtent, this.networkOptions);
+            // console.log('loadData AFTER fetch', file);
+            try {
+                features = await this.parser(file, { out, in: this, extent });
+            } catch (err) {
+                console.log(err);
+            }
+
+            // features = this.fetcher(urlFromExtent, this.networkOptions)
+            //     .then(file => this.parser(file, { out, in: this, extent }))
+            //     .catch(err => this.handlingError(err));
+
+            // console.log('loadData AFTER parser', features);
 
             cache.set(key, features);
         }
