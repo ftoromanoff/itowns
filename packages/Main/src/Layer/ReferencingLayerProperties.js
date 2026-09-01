@@ -7,7 +7,12 @@ function ReferLayerProperties(material, layer) {
         const getOpacity = (opacity) => {
             const styleOpacity = material.layer.style?.fill?.opacity ?? 1;
             const layerOpacity = material.layer.opacity;
-            return layerOpacity * (opacity ?? styleOpacity);
+            if (layer.id === 'VTBuilding') {
+                // console.log('getOpacity', 'layerOpac:', layerOpacity, 'mat opac:', opacity, 'Style opac', styleOpacity);
+                // console.log(material);
+            }
+            // return layerOpacity * (opacity ?? styleOpacity);
+            return layerOpacity * (opacity ?? 1) * styleOpacity;
         };
 
         let opacity;
@@ -15,11 +20,19 @@ function ReferLayerProperties(material, layer) {
             opacity = material.uniforms.opacity.value;
             Object.defineProperty(material.uniforms.opacity, 'value', {
                 get: () => getOpacity(opacity),
+                set: (val) => {
+                    // console.log('set mat.unif.opac', material.uniforms);
+                    opacity = val;
+                },
             });
         } else if (material.opacity != undefined) {
             opacity = material.opacity;
             Object.defineProperty(material, 'opacity', {
                 get: () => getOpacity(opacity),
+                set: (val) => {
+                    // console.log('set mat.opac', val);
+                    opacity = val;
+                },
             });
         }
 

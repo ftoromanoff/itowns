@@ -80,12 +80,12 @@
             // Add one imagery layer to the scene. This layer's properties are
             // defined in a json file, but it could be defined as a plain js
             // object. See `Layer` documentation for more info.
-            const ortho = itowns.Fetcher.json('./layers/JSONLayers/Ortho.json')
-                .then(function _(config) {
-                    config.source = new itowns.WMTSSource(config.source);
-                    var layer = new itowns.ColorLayer('Ortho', config);
-                    return view.addLayer(layer);
-                });
+            // const ortho = itowns.Fetcher.json('./layers/JSONLayers/Ortho.json')
+            //     .then(function _(config) {
+            //         config.source = new itowns.WMTSSource(config.source);
+            //         var layer = new itowns.ColorLayer('Ortho', config);
+            //         return view.addLayer(layer);
+            //     });
 
             // Add an elevation layer, whose properties are defined in a json 
             // file.
@@ -179,7 +179,7 @@
                     layer.whenReady.then( function _(layer) {
                         var gui = debug.GeometryDebug.createGeometryDebugUI(debugMenu.gui, view, layer);
                         debug.GeometryDebug.addWireFrameCheckbox(gui, view, layer);
-                        window.addEventListener('mousemove', picking, false);
+                        // window.addEventListener('mousemove', picking, false);
                     });
                 }
             }

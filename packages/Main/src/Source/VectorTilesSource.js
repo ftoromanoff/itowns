@@ -90,6 +90,8 @@ class VectorTilesSource extends TMSSource {
         }
 
         this.whenReady = promise.then((mvtStyle) => {
+            console.log(mvtStyle);
+            console.log(mvtStyle.layers.find(l => l.id === 'building'));
             this.jsonStyle = mvtStyle;
             let baseurl = source.sprite || mvtStyle.sprite;
             if (baseurl) {
@@ -166,8 +168,10 @@ class VectorTilesSource extends TMSSource {
     }
 
     loadData(extent, out) {
+        // console.log('loadData', extent.zoom);
         const cache = this._featuresCaches[out.crs];
         const key = this.getDataKey(extent);
+        // console.log('loadData', key);
         // try to get parsed data from cache
         let features = cache.get(key);
         if (!features) {

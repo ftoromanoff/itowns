@@ -496,7 +496,7 @@ function featureToExtrudedLine(feature, options) {
     geom.setAttribute('batchId', new THREE.Uint32BufferAttribute(batchIds.subarray(0, buffers.vertPtr), 1));
     geom.setIndex(new THREE.BufferAttribute(indices.subarray(0, buffers.indexPtr), 1));
 
-    return new THREE.Mesh(geom, options.polygonMaterial);
+    return new THREE.Mesh(geom, options.material[options.zoom].polygonMaterial);
 }
 
 /**
@@ -824,7 +824,7 @@ function featureToPolygon(feature, options) {
     geom.setAttribute('batchId', new THREE.BufferAttribute(batchIds, 1));
     geom.setIndex(new THREE.BufferAttribute(getIntArrayFromSize(indices, vertices.length / 3), 1));
 
-    return new THREE.Mesh(geom, options.polygonMaterial);
+    return new THREE.Mesh(geom, options.material[options.zoom].polygonMaterial);
 }
 
 /**
@@ -940,7 +940,7 @@ function featureToExtrudedPolygon(feature, options) {
 
     geom.setIndex(new THREE.BufferAttribute(getIntArrayFromSize(indices, vertices.length / 3), 1));
 
-    return new THREE.Mesh(geom, options.polygonMaterial);
+    return new THREE.Mesh(geom, options.material[options.zoom].polygonMaterial);
 }
 
 /**
@@ -1263,16 +1263,33 @@ export default {
      */
     convert(options = {}) {
         deprecatedFeature2MeshOptions(options);
-        return function _convert(collection) {
+        // console.log('convert', options);
+        return function _convert(collection, to) {
             if (!collection) { return; }
 
+            // if (!options.pointMaterial) {
+            //     // Opacity and wireframe refered with layer properties
+            //     // TODO: next step is move these properties to Style
+            //     options.pointMaterial = ReferLayerProperties(new THREE.PointsMaterial(), this);
+            //     options.lineMaterial = ReferLayerProperties(new THREE.LineBasicMaterial(), this);
+            //     options.polygonMaterial = ReferLayerProperties(new THREE.MeshBasicMaterial(), this);
+            // }
+
             if (!options.pointMaterial) {
+                if (!options.material) {
+                    options.material = {};
+                }
+                if (!options.material[to.zoom]) {
+                    options.material[to.zoom] = {};
+                }
                 // Opacity and wireframe refered with layer properties
                 // TODO: next step is move these properties to Style
-                options.pointMaterial = ReferLayerProperties(new THREE.PointsMaterial(), this);
-                options.lineMaterial = ReferLayerProperties(new THREE.LineBasicMaterial(), this);
-                options.polygonMaterial = ReferLayerProperties(new THREE.MeshBasicMaterial(), this);
+                options.material[to.zoom].pointMaterial = ReferLayerProperties(new THREE.PointsMaterial(), this);
+                options.material[to.zoom].lineMaterial = ReferLayerProperties(new THREE.LineBasicMaterial(), this);
+                options.material[to.zoom].polygonMaterial = ReferLayerProperties(new THREE.MeshBasicMaterial(), this);
             }
+
+            options.zoom = to.zoom;
 
             // In the case we didn't instanciate the layer (this) before the convert, we can pass
             // style properties (@link StyleOptions) using options.style.
@@ -1281,6 +1298,7 @@ export default {
             style = this?.style || (options.style ? new Style(options.style) : defaultStyle);
 
             context.setCollection(collection);
+            context.setZoom(to.zoom);
 
             const features = collection.features;
             if (!features || features.length == 0) { return; }

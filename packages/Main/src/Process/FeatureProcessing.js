@@ -67,10 +67,14 @@ export default {
             zoomDest = extentsDestination[0].zoom;
         }
 
+        // if (this.id === 'VTBuilding') {
+        //     console.log('FeatureProcessing', layer, zoomDest);
+        // }
+
         // check if it's tile level is equal to display level layer.
         // TO DO updata at all level asked
-        // if ((zoomDest < layer.zoom.min && zoomDest > layer.zoom.max) ||
-        if (zoomDest != layer.zoom.min ||
+        if ((zoomDest < layer.zoom.min || zoomDest > layer.zoom.max) ||
+        // if (zoomDest != layer.zoom.min ||
         // check if there's data in extent tile.
             !this.source.hasData(node.extent) ||
         // In FileSource case, check if the feature center is in extent tile.
@@ -107,7 +111,43 @@ export default {
                         // TODO: Clean cache needs a refactory, because it isn't really efficient and used
                         ObjectRemovalHelper.removeChildrenAndCleanupRecursively(layer, featureMesh);
                     } else {
+                        if (node.parent.link[layer.id]?.length > 0) {
+                            // console.log('parent a nettoyer', layer.object3d.children.length, ':', node.parent.link[layer.id].length, 'node to supp');
+                            /* test visibility */
+                            // node.parent.link[layer.id].forEach(fM => fM.visibility = 0);
+                            /* test remove */
+                            // node.parent.link[layer.id].forEach((fM) => {
+                            //     console.log(fM);
+                            //     // fM.geometry.dispose();
+                            //     // fM.material.dispose();
+                            //     // layer.object3d.remove(fM);
+                            //     // ObjectRemovalHelper.cleanup(fM);
+                            // });
+                            // node.parent.link[layer.id] = [];
+                            /* test opacity*/
+                            node.parent.link[layer.id].forEach((fM) => {
+                                // console.log(fM);
+                                fM.meshes.traverse((child) => {
+                                    if (child.isMesh) {
+                                        // console.log(child);
+                                        child.material.transparent = true;
+                                        child.material.opacity = 0;
+                                        // child.material.needsUpdate = true;
+                                    }
+                                });
+                            });
+                            // console.log(layer.id, node.parent);
+                            // console.log('-> END parent a nettoyer', layer.object3d.children, ':', node.parent.link[layer.id]);
+                        }
+                        // console.log('FeatureProcessing', node.parent.link[layer.id], layer.id);
+                        // console.log('FeatureProcessing', layer.object3d);
                         layer.object3d.add(featureMesh);
+                        featureMesh.meshes.traverse((child) => {
+                            if (child.isMesh) {
+                                // child.material.transparent = false;
+                                child.material.opacity = 1;
+                            }
+                        });
                         node.link[layer.id].push(featureMesh);
                     }
                     featureMesh.layer = layer;

@@ -261,7 +261,9 @@ function setFromVectorTileLayer(layer, sprites, symbolToCircle = false) {
 
     if (layer.type === 'fill') {
         const { color, opacity } = rgba2rgb(readVectorProperty(layer.paint['fill-color'] || layer.paint['fill-pattern'], { type: 'color' }));
+        color.stops[1] = [18, '#2a14d1'];
         style.fill.color = color;
+        console.log('opacity', readVectorProperty(layer.paint['fill-opacity']), 'color', color);
         style.fill.opacity = readVectorProperty(layer.paint['fill-opacity']) || opacity;
         if (layer.paint['fill-pattern']) {
             try {

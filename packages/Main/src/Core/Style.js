@@ -21,6 +21,7 @@ function baseAltitudeDefault(properties, ctx) {
 }
 
 export function readExpression(property, ctx) {
+// export function readExpression(property, ctx, cat, param) {
     if (property.expression) {
         return property.expression.evaluate(ctx);
     }
@@ -29,7 +30,9 @@ export function readExpression(property, ctx) {
         property = property.stops[0][1];
         for (let i = stops.length - 1; i >= 0; i--) {
             const stop = stops[i];
-
+            // if (param === 'color') {
+            //     console.log(cat, param, property, ctx.zoom);
+            // }
             if (ctx.zoom >= stop[0]) {
                 property = stop[1];
                 break;
@@ -128,9 +131,12 @@ function defineStyleProperty(style, category, parameter, userValue, defaultValue
             enumerable: true,
             get: () => {
                 // != to check for 'undefined' and 'null' value
-                if (property != undefined) { return readExpression(property, style.context); }
+                if (property != undefined) { return readExpression(property, style.context, category, parameter); }
                 const dataValue = style.context.featureStyle?.[category]?.[parameter];
-                if (dataValue != undefined) { return readExpression(dataValue, style.context); }
+                // if (parameter === 'opacity') {
+                //     console.log('TOTO', style.context);
+                // }
+                if (dataValue != undefined) { return readExpression(dataValue, style.context, category, parameter); }
                 if (defaultValue instanceof Function) {
                     return defaultValue(style.context.properties, style.context) ?? defaultValue;
                 }

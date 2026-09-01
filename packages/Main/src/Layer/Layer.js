@@ -254,9 +254,19 @@ class Layer extends THREE.EventDispatcher {
     }
 
     getData(from, to) {
+        // if (this.id === 'VTBuilding') {
+        //     console.log('getData', from.zoom, to.zoom, this.source.isVectorSource);
+        // }
         const key = this.source.getDataKey(this.source.isVectorSource ? to : from);
+        // if (this.id === 'VTBuilding') {
+        //     console.log(key);
+        // }
         let data = this.cache.get(key);
         if (!data) {
+            // if (this.id === 'VTBuilding') {
+            //     console.log('-----µµµµµIVIVI', key);
+            //     console.log(this.source);
+            // }
             data = this.source.loadData(from, this)
                 .then(feat => this.convert(feat, to))
                 .catch((err) => {
@@ -264,6 +274,10 @@ class Layer extends THREE.EventDispatcher {
                 });
             this.cache.set(key, data);
         }
+        // if (this.id === 'VTBuilding') {
+        //     console.log('data', data, from.zoom);
+        // }
+
         return data;
     }
 

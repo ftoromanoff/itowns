@@ -80,6 +80,7 @@ class FeatureGeometryLayer extends GeometryLayer {
     }
 
     preUpdate(context, sources) {
+        // console.log('preUpdate', this, context);
         if (sources.has(this.parent)) {
             this.object3d.clear();
         }
@@ -104,6 +105,9 @@ class FeatureGeometryLayer extends GeometryLayer {
             // so that event listeners registered on it are preserved.
             const categories = ['zoom', 'fill', 'stroke', 'point', 'text', 'icon'];
             for (const cat of categories) {
+                if (cat === 'zoom') {
+                    console.log('zoom', value['zoom']);
+                }
                 if (value[cat] !== undefined) {
                     this._style[cat] = value[cat];
                 }
