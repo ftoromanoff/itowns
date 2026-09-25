@@ -85,7 +85,7 @@ class VpcSource extends Source {
                         resolve = re;
                         reject = rj;
                     }).catch((err) => {
-                        console.warn(err);
+                        // console.warn(err);
                         this.handlingError(err);
                     });
 
@@ -116,6 +116,9 @@ class VpcSource extends Source {
                     this.sources.push(mockSource);
                 });
                 return this;
+            })
+            .catch((err) => {
+                this.handlingError(err);
             });
     }
 }
