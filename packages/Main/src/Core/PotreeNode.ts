@@ -71,9 +71,7 @@ Record<string, PotreeNodeHierarchy> {
     return hierarchy;
 }
 
-class PotreeNode extends PotreeNodeBase {
-    source: PotreeSource;
-
+class PotreeNode extends PotreeNodeBase<PotreeSource> {
     override url: string;
 
     hierarchy: Record<string, PotreeNodeHierarchy>;
@@ -92,9 +90,7 @@ class PotreeNode extends PotreeNodeBase {
     ) {
         const voxelKey = buildVoxelKey(depth, x, y, z);
         const numPoints = hierarchy[voxelKey]?.numPoints ?? -1;
-        super(depth, x, y, z, numPoints);
-
-        this.source = source;
+        super(depth, x, y, z, numPoints, source);
 
         this.voxelKey = voxelKey;
 

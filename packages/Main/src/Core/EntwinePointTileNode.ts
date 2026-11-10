@@ -3,9 +3,7 @@ import Fetcher from 'Provider/Fetcher';
 import { buildVoxelKey } from 'Core/PointCloudNode';
 import LasNodeBase from 'Core/LasNodeBase';
 
-class EntwinePointTileNode extends LasNodeBase {
-    source: EntwinePointTileSource;
-
+class EntwinePointTileNode extends LasNodeBase<EntwinePointTileSource> {
     override url: string;
 
     hierarchy: Record<string, number>;
@@ -38,9 +36,7 @@ class EntwinePointTileNode extends LasNodeBase {
     ) {
         const voxelKey = buildVoxelKey(depth, x, y, z);
         const numPoints = hierarchy[voxelKey] ?? -1;
-        super(depth, x, y, z, numPoints);
-
-        this.source = source;
+        super(depth, x, y, z, numPoints, source);
 
         this.voxelKey = voxelKey;
 

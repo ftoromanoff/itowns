@@ -1,4 +1,6 @@
 import PointCloudNode from 'Core/PointCloudNode';
+import type PotreeSource from 'Source/PotreeSource';
+import type Potree2Source from 'Source/Potree2Source';
 
 export interface NodeKeyInfo {
     depth: number;
@@ -41,7 +43,7 @@ export function getChildVoxelKey(nodeInfo: NodeKeyInfo, childIndex: number) {
     };
 }
 
-export abstract class PotreeNodeBase extends PointCloudNode {
+export abstract class PotreeNodeBase<S extends PotreeSource | Potree2Source> extends PointCloudNode<S> {
     /** X position within the octree */
     x: number;
     /** Y position within the octree */
@@ -53,8 +55,9 @@ export abstract class PotreeNodeBase extends PointCloudNode {
         depth: number,
         x: number, y: number, z: number,
         numPoints: number,
+        source: S,
     ) {
-        super(depth, numPoints);
+        super(source, depth, numPoints);
 
         this.x = x;
         this.y = y;
