@@ -23,9 +23,9 @@ export function buildVoxelKey(depth: number, x: number, y: number, z: number): s
     return `${depth}-${x}-${y}-${z}`;
 }
 
-abstract class PointCloudNode extends THREE.EventDispatcher {
+abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> extends THREE.EventDispatcher {
     /** Data source of the node. */
-    abstract source: PointCloudSource;
+    source: S;
 
     depth: number;
     /**
@@ -33,6 +33,8 @@ abstract class PointCloudNode extends THREE.EventDispatcher {
      * '-1' is the node has been loaded yet
      */
     numPoints: number;
+
+    pointSpacing: number;
 
     /** The children nodes of this node. */
     children: this[];
@@ -66,11 +68,14 @@ abstract class PointCloudNode extends THREE.EventDispatcher {
 
     private _childrenCreated: boolean;
 
-    constructor(depth: number, numPoints = -1) {
+    constructor(source: S, depth: number, numPoints = -1) {
         super();
 
+        this.source = source;
         this.depth = depth;
         this.numPoints = numPoints;
+
+        this.pointSpacing = this.source.spacing / 2 ** this.depth;
 
         this.children = [];
         this.parent = undefined;
@@ -90,10 +95,6 @@ abstract class PointCloudNode extends THREE.EventDispatcher {
     abstract fetcher(url: string, networkOptions:  RequestInit): Promise<ArrayBuffer>;
     abstract loadHierarchy(): Promise<unknown>;
     abstract findAndCreateChild(depth: number, x: number, y: number, z: number): void;
-
-    get pointSpacing(): number {
-        return this.source.spacing / 2 ** this.depth;
-    }
 
     get hierarchyIsLoaded(): boolean {
         return this.numPoints >= 0;

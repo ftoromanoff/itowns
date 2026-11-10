@@ -1,6 +1,7 @@
 import PointCloudNode from 'Core/PointCloudNode';
+import type { EntwinePointTileSource, CopcSource } from 'Main';
 
-abstract class LasNodeBase extends PointCloudNode {
+abstract class LasNodeBase<S extends CopcSource | EntwinePointTileSource> extends PointCloudNode<S> {
     /** X position within the octree */
     x: number;
     /** Y position within the octree */
@@ -12,8 +13,9 @@ abstract class LasNodeBase extends PointCloudNode {
         depth: number,
         x: number, y: number, z: number,
         numPoints: number,
+        source: S,
     ) {
-        super(depth, numPoints);
+        super(source, depth, numPoints);
 
         this.x = x;
         this.y = y;

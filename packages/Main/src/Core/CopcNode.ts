@@ -3,14 +3,12 @@ import { Hierarchy } from 'copc';
 import { buildVoxelKey } from 'Core/PointCloudNode';
 import LasNodeBase from 'Core/LasNodeBase';
 
-class CopcNode extends LasNodeBase {
+class CopcNode extends LasNodeBase<CopcSource> {
     /**
      * Used to checkout whether this node is a CopcNode. Default is `true`.
      * You should not change this, as it is used internally for optimisation.
      */
     readonly isCopcNode: true;
-
-    source: CopcSource;
 
     override url: string;
 
@@ -50,9 +48,8 @@ class CopcNode extends LasNodeBase {
         const voxelKey = buildVoxelKey(depth, x, y, z);
         const hNode = hierarchy.nodes[voxelKey];
         const numPoints = hNode?.pointCount ?? -1;
-        super(depth, x, y, z, numPoints);
+        super(depth, x, y, z, numPoints, source);
         this.isCopcNode = true;
-        this.source = source;
 
         this.voxelKey = voxelKey;
 
