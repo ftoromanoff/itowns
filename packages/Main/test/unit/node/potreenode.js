@@ -218,6 +218,8 @@ describe('Potree Node', function () {
         });
 
         describe('findAndCreateChild()', () => {
+            beforeEach(() => { node.children = []; });
+
             it('child not in hierarchy', () => {
                 spy.add = sinon.spy(node, 'add');
                 assert.equal(node.children.length, 0);

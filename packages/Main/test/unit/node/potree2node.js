@@ -282,6 +282,8 @@ describe('Potree2 Node', function () {
         });
 
         describe('findAndCreateChild()', () => {
+            beforeEach(() => { node.children = []; });
+
             it('child not in hierarchy', () => {
                 const addSpy = sandbox.spy(node, 'add');
                 assert.equal(node.children.length, 0);

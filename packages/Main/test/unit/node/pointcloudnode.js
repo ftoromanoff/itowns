@@ -4,18 +4,13 @@ import PointCloudNode, { buildVoxelKey } from 'Core/PointCloudNode';
 import { Box3, Vector3 } from 'three';
 
 const crs = 'EPSG:4978';
-function newPtCloudNodeWithSource(depth, numPoints, source) {
-    const node = new PointCloudNode(depth, numPoints);
-    node.source = source;// might be moved to constructor ?
-    return node;
-}
 
-function newPtCloudNodeWithKey(depth, numPoints, key) {
-    const node = new PointCloudNode(depth, numPoints);
+function newPtCloudNodeWithKey(source, depth, numPoints, key) {
+    const node = new PointCloudNode(source, depth, numPoints);
     node.x = key.x;
     node.y = key.y;
     node.z = key.z;
-    // console.log(key, Object.values(key));
+
     node.voxelKey = buildVoxelKey(depth, ...Object.values(key));
     return node;
 }
@@ -36,7 +31,7 @@ describe('Point Cloud Node', function () {
         it('instanciate a node', () => {
             const depth = 2;
             const numPoints = 5000;
-            const node = new PointCloudNode(depth, numPoints);
+            const node = new PointCloudNode(source, depth, numPoints);
             assert.ok(node instanceof PointCloudNode);
             assert.equal(node.numPoints, numPoints);
         });
@@ -45,7 +40,7 @@ describe('Point Cloud Node', function () {
     describe('getters', () => {
         let root;
         before('instanciate a root node', function () {
-            root = newPtCloudNodeWithSource(0, -1, source);
+            root = new PointCloudNode(source, 0, -1);
         });
 
         it('get hierarchyIsLoaded', () => {
@@ -57,7 +52,7 @@ describe('Point Cloud Node', function () {
             const x = 5;
             const y = 12;
             const z = 2;
-            const node = newPtCloudNodeWithKey(depth, -1, { x, y, z });
+            const node = newPtCloudNodeWithKey(source, depth, -1, { x, y, z });
             assert.equal(node.id, buildVoxelKey(depth, x, y, z));
         });
     });
@@ -71,11 +66,12 @@ describe('Point Cloud Node', function () {
         let spy;
         let stub;
         before('instanciate nodes', function () {
-            root = new PointCloudNode(0, 0);
-            rootWithId = new newPtCloudNodeWithKey(0, 0, { x: 0, y: 0, z: 0 });
+            root = new PointCloudNode(source, 0, 0);
+            root.children = [];
+            rootWithId = new newPtCloudNodeWithKey(source, 0, 0, { x: 0, y: 0, z: 0 });
 
-            child = new PointCloudNode(1, 0);
-            childWithId = new newPtCloudNodeWithKey(1, 0, { x: 0, y: 1, z: 0 });
+            child = new PointCloudNode(source, 1, 0);
+            childWithId = new newPtCloudNodeWithKey(source, 1, 0, { x: 0, y: 1, z: 0 });
         });
 
         afterEach('restore spies', function () {
@@ -89,40 +85,51 @@ describe('Point Cloud Node', function () {
             }
         });
 
-        it('createChildren()', async () => {
-            rootWithId.loadHierarchy = () => {
-                root.hierarchy = {};
-                return {};
+        it('subdivide()', async () => {
+            rootWithId.loadHierarchy = () => Promise.resolve({});
+            stub = {
+                createChildren: sinon.stub(rootWithId, 'createChildren')
+                    .callsFake(() => { rootWithId.children = []; }),
             };
-            rootWithId.findAndCreateChild = (/* d, x, y, z */) => {};
+
             spy = {
                 loadHierarchy: sinon.spy(rootWithId, 'loadHierarchy'),
+            };
+
+            await rootWithId.subdivide();
+            assert.ok(spy.loadHierarchy.calledOnce, 'loadHierarchy not called once');
+            assert.ok(stub.createChildren.calledOnce, 'createChildren not called once');
+            assert.deepStrictEqual(rootWithId.children, []);
+
+            // children are created only once
+            await rootWithId.subdivide();
+            assert.equal(spy.loadHierarchy.callCount, 2);
+            assert.equal(stub.createChildren.callCount, 1);
+        });
+
+        it('createChildren()', () => {
+            rootWithId.findAndCreateChild = (d, x, y, z) => {
+                rootWithId.children.push(`child_${d}-${x}-${y}-${z}`);
+            };
+
+            spy = {
                 findAndCreateChild: sinon.spy(rootWithId, 'findAndCreateChild'),
             };
 
-            await rootWithId.createChildren();
-            assert.ok(spy.loadHierarchy.calledOnce);
+            rootWithId.createChildren();
             assert.equal(spy.findAndCreateChild.callCount, 8);
 
-            assert.ok(rootWithId._childrenCreated);
+            assert.equal(rootWithId.children.length, 8);
         });
 
         it('load()', async () => {
-            root.source = source;
-            root._childrenCreated = false;
-            root.loadHierarchy = () => {
-                root.hierarchy = {};
-                return {};
-            };
-            root.findAndCreateChild = (/* d, x, y, z */) => {};
+            root.loadHierarchy = () => Promise.resolve({});
             spy = {
-                createChildren: sinon.spy(root, 'createChildren'),
                 loadHierarchy: sinon.spy(root, 'loadHierarchy'),
             };
             root.fetcher = () => Promise.resolve('fetched');
-            source.parser = buffer => Promise.resolve(`${buffer ? `${buffer} and ` : ''}parsed`);
-            const data = await root.load();
-            assert.ok(spy.createChildren.calledOnce);
+            source.parser = buffer => Promise.resolve(`${buffer} and parsed`);
+            const data = await root.load(crs);
             assert.ok(spy.loadHierarchy.calledOnce);
             assert.equal(data, 'fetched and parsed');
         });
@@ -177,7 +184,7 @@ describe('Point Cloud Node', function () {
             let root;
             before('instantiate the nodes', function () {
                 function newPtCloudNodeWithId(depth, numPoints, key) {
-                    const node = newPtCloudNodeWithKey(depth, numPoints, key);
+                    const node = newPtCloudNodeWithKey(source, depth, numPoints, key);
                     node.setOBBes = () => {};
                     return node;
                 }

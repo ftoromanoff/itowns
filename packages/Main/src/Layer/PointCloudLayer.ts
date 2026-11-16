@@ -5,7 +5,7 @@ import PointsMaterial, { PNTS_MODE, PNTS_SIZE_MODE } from 'Renderer/PointsMateri
 import Picking from 'Core/Picking';
 import { computeVisibilityTextureData } from 'Utils/PointCloudUtils';
 
-import type PointCloudNode from 'Core/PointCloudNode';
+import PointCloudNode from 'Core/PointCloudNode';
 
 const point = new THREE.Vector3();
 
@@ -69,14 +69,15 @@ interface Context {
         isBox3Visible: (bbox: THREE.Box3, matrixWorld: THREE.Matrix4) => boolean;
     };
     scheduler: {
-        execute: (command: {
+        execute: <T = THREE.Points>(command: {
             layer: PointCloudLayer;
             requester: PointCloudNode;
             view: object;
             priority: number;
             redraw: boolean;
+            callback?: { executeCommand: () => Promise<unknown> };
             earlyDropFunction?: (cmd: { requester: PointCloudNode }) => boolean;
-        }) => Promise<THREE.Points>;
+        }) => Promise<T>;
     };
     view: {
         notifyChange: (elt: PointCloudLayer) => void;
@@ -366,6 +367,31 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
         return [this.root];
     }
 
+    loadChildren(
+        node: PointCloudNode, context: Context, layer: this,
+    ): void {
+        if (node.children || node.childrenPromise) { return; }
+
+        node.childrenPromise = context.scheduler.execute({
+            layer,
+            requester: node,
+            view: context.view,
+            priority: node.sse,
+            redraw: false,
+            callback: { executeCommand: () => node.subdivide() },
+            earlyDropFunction: cmd => !cmd.requester.visible || !this.visible,
+        }).then(() => {
+            // the node is not recognised as a change source of this layer, see loadData
+            context.view.notifyChange(this);
+        }).catch((err: { isCancelledCommandException?: boolean }) => {
+            if (!err.isCancelledCommandException) {
+                this.dispatchEvent({ type: 'load-error', tile: node, error: err });
+            }
+        }).finally(() => {
+            node.childrenPromise = null;
+        });
+    }
+
     /**
      * Load the data of a node.
      * Send a promise to get the data (if not already sent)
@@ -482,11 +508,10 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
             this._candidateNodes.push(node);
             this.loadData(node, context, layer);
 
-            if (node.children && node.children.length) {
-                if (node.sse >= this.sseThreshold) {
-                    for (const child of node.children) {
-                        queue.push({ node: child, weight: node.sse });
-                    }
+            if (node.sse >= this.sseThreshold) {
+                this.loadChildren(node, context, layer);
+                for (const child of node.children ?? []) {
+                    queue.push({ node: child, weight: node.sse });
                 }
             }
         }

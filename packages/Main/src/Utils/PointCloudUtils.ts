@@ -14,7 +14,7 @@ function encodeChildrenVisibility(node: PointCloudNode, nodeIndex: number,
     let minOffset = Infinity;
     let childVisibilityMask = 0;
 
-    for (const child of node.children) {
+    for (const child of node.children ?? []) {
         const childIndex = nodeToIndex.get(child);
         if (childIndex === undefined) {
             continue;
@@ -49,7 +49,7 @@ export function computeVisibilityTextureData(root: PointCloudNode, visibleNodes:
             continue;
         }
         nodeToIndex.set(node, index++);
-        for (const child of node.children) {
+        for (const child of node.children ?? []) {
             queue.push(child);
         }
     }

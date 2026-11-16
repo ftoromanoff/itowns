@@ -23,41 +23,41 @@ describe.skip('preUpdate Potree2Layer', function () {
                 byteSize: BigInt(22n),
             },
         };
-        layer.root = new Potree2Node(0, 0, 0, 0, source, crs, rootHierarchy);
+        layer.root = new Potree2Node(0, 0, 0, 0, source, rootHierarchy);
         layer.object3d.add(layer.root.clampOBB);
         layer.root.voxelOBB.setFromArray([1000, 1000, 1000, 0, 0, 0]);
 
-        layer.root.add(new Potree2Node(1, 0, 3000, 0, source, crs), 1);
+        layer.root.add(new Potree2Node(1, 0, 3000, 0, source));
         layer.root.children[0].obj = { layer, isPoints: true };
-        layer.root.add(new Potree2Node(1, 1, 3000, 0, source, crs), 2);
+        layer.root.add(new Potree2Node(1, 1, 3000, 0, source));
         layer.root.children[1].obj = { layer, isPoints: true };
-        layer.root.add(new Potree2Node(1, 2, 3000, 0, source, crs), 3);
+        layer.root.add(new Potree2Node(1, 2, 3000, 0, source));
         layer.root.children[2].obj = { layer, isPoints: true };
 
-        layer.root.children[0].add(new Potree2Node(2, 0, 2000, 0, source, crs), 1);
+        layer.root.children[0].add(new Potree2Node(2, 0, 2000, 0, source));
         layer.root.children[0].children[0].obj = { layer, isPoints: true };
-        layer.root.children[0].add(new Potree2Node(2, 1, 2000, 0, source, crs), 2);
+        layer.root.children[0].add(new Potree2Node(2, 1, 2000, 0, source));
         layer.root.children[0].children[1].obj = { layer, isPoints: true };
-        layer.root.children[1].add(new Potree2Node(2, 2, 2000, 0, source, crs), 1);
+        layer.root.children[1].add(new Potree2Node(2, 2, 2000, 0, source));
         layer.root.children[1].children[0].obj = { layer, isPoints: true };
-        layer.root.children[2].add(new Potree2Node(2, 3, 2000, 0, source, crs), 2);
+        layer.root.children[2].add(new Potree2Node(2, 3, 2000, 0, source));
         layer.root.children[2].children[0].obj = { layer, isPoints: true };
-        layer.root.children[2].add(new Potree2Node(2, 4, 2000, 0, source, crs), 3);
+        layer.root.children[2].add(new Potree2Node(2, 4, 2000, 0, source));
         layer.root.children[2].children[1].obj = { layer, isPoints: true };
 
-        layer.root.children[0].children[0].add(new Potree2Node(3, 0, 1000, 0, source, crs), 1);
+        layer.root.children[0].children[0].add(new Potree2Node(3, 0, 1000, 0, source));
         layer.root.children[0].children[0].children[0].obj = { layer, isPoints: true };
-        layer.root.children[0].children[0].add(new Potree2Node(3, 1, 1000, 0, source, crs), 5);
+        layer.root.children[0].children[0].add(new Potree2Node(3, 1, 1000, 0, source));
         layer.root.children[0].children[0].children[1].obj = { layer, isPoints: true };
-        layer.root.children[0].children[1].add(new Potree2Node(3, 2, 1000, 0, source, crs), 4);
+        layer.root.children[0].children[1].add(new Potree2Node(3, 2, 1000, 0, source));
         layer.root.children[0].children[1].children[0].obj = { layer, isPoints: true };
-        layer.root.children[2].children[1].add(new Potree2Node(3, 3, 1000, 0, source, crs), 1);
+        layer.root.children[2].children[1].add(new Potree2Node(3, 3, 1000, 0, source));
         layer.root.children[2].children[1].children[0].obj = { layer, isPoints: true };
-        layer.root.children[2].children[1].add(new Potree2Node(3, 4, 1000, 0, source, crs), 2);
+        layer.root.children[2].children[1].add(new Potree2Node(3, 4, 1000, 0, source));
         layer.root.children[2].children[1].children[1].obj = { layer, isPoints: true };
-        layer.root.children[2].children[1].add(new Potree2Node(3, 5, 1000, 0, source, crs), 3);
+        layer.root.children[2].children[1].add(new Potree2Node(3, 5, 1000, 0, source));
         layer.root.children[2].children[1].children[2].obj = { layer, isPoints: true };
-        layer.root.children[2].children[1].add(new Potree2Node(3, 6, 1000, 0, source, crs), 4);
+        layer.root.children[2].children[1].add(new Potree2Node(3, 6, 1000, 0, source));
         layer.root.children[2].children[1].children[3].obj = { layer, isPoints: true };
     });
 

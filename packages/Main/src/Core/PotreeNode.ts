@@ -125,7 +125,7 @@ class PotreeNode extends PotreeNodeBase<PotreeSource> {
         return fetcher;
     }
 
-    async loadHierarchy(): Promise<Record<string, PotreeNodeHierarchy>> {
+    override async loadHierarchy(): Promise<Record<string, PotreeNodeHierarchy>> {
         if (this.hierarchyIsLoaded) {
             return this.hierarchy;
         }

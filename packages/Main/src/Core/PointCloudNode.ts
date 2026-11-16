@@ -36,8 +36,7 @@ abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> ext
 
     pointSpacing: number;
 
-    /** The children nodes of this node. */
-    children: this[];
+
     parent: this | undefined;
 
     /** The node cubique obb. */
@@ -51,8 +50,13 @@ abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> ext
     /** The sse of the node set at an nitial value of -1. */
     sse: number;
     notVisibleSince: number | undefined;
+
     promise: Promise<unknown> | null;
     obj: THREE.Points & { matrixWorldInverse?: THREE.Matrix4 } | undefined;
+
+    childrenPromise: Promise<void> | null;
+    /** The children nodes of this node. */
+    children: this[] | undefined;
 
     abstract url: string;
 
@@ -66,19 +70,17 @@ abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> ext
      */
     abstract voxelKey: string;
 
-    private _childrenCreated: boolean;
-
     constructor(source: S, depth: number, numPoints = -1) {
         super();
 
         this.source = source;
+
+        this.parent = undefined;
+        this.children = undefined;
+
         this.depth = depth;
         this.numPoints = numPoints;
-
         this.pointSpacing = this.source.spacing / 2 ** this.depth;
-
-        this.children = [];
-        this.parent = undefined;
 
         this.voxelOBB = new OBB();
         this.clampOBB = new OBB();
@@ -86,8 +88,7 @@ abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> ext
 
         this.visible = false;
         this.promise = null;
-
-        this._childrenCreated = false;
+        this.childrenPromise = null;
     }
 
     abstract get networkOptions(): RequestInit;
@@ -106,9 +107,7 @@ abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> ext
     }
 
     async load(crsOut: string): Promise<THREE.BufferGeometry> {
-        if (!this._childrenCreated) {
-            await this.createChildren();
-        }
+        await this.loadHierarchy();
         return this.fetcher(this.url, this.networkOptions)
             .then(file => this.source.parser(file, {
                 in: this,
@@ -116,8 +115,14 @@ abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> ext
             }));
     }
 
-    async createChildren(): Promise<void> {
+    async subdivide(): Promise<this[]> {
         await this.loadHierarchy();
+        if (!this.children) { this.createChildren(); }
+        return (this.children as this[]);
+    }
+
+    private createChildren(): void {
+        this.children = [];
 
         const depth = this.depth + 1;
         const x = this.x * 2;
@@ -136,11 +141,10 @@ abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> ext
         this.findAndCreateChild(depth, x + 1, y,     z + 1);  // 5
         this.findAndCreateChild(depth, x + 1, y + 1, z);      // 6
         this.findAndCreateChild(depth, x + 1, y + 1, z + 1);  // 7
-        this._childrenCreated = true;
     }
 
     add(node: this): void {
-        this.children.push(node);
+        (this.children ??= []).push(node);
         node.parent = this;
         node.setOBBes();
     }

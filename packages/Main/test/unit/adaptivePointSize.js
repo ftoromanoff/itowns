@@ -3,7 +3,13 @@ import PointCloudNode, { buildVoxelKey } from 'Core/PointCloudNode';
 import { computeVisibilityTextureData } from 'Utils/PointCloudUtils';
 
 function createNode(depth, x, y, z) {
-    const node = new PointCloudNode(depth);
+    const source = {
+        spacing: 1,
+        crs: 'EPSG:4978',
+        zmin: 0,
+        zmax: 1,
+    };
+    const node = new PointCloudNode(source, depth);
     node.x = x;
     node.y = y;
     node.z = z;
