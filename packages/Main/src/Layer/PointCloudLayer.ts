@@ -372,11 +372,17 @@ abstract class PointCloudLayer<S extends PointCloudSource = PointCloudSource>
     ): void {
         if (node.children || node.childrenPromise) { return; }
 
+        if (node.hierarchyIsLoaded) {
+            node.subdivide();
+            return;
+        }
+
+        // proxy node: the hierarchy page must be fetched, we need the scheduler
         node.childrenPromise = context.scheduler.execute({
             layer,
             requester: node,
             view: context.view,
-            priority: node.sse,
+            priority: node.sse * 1.01,
             redraw: false,
             callback: { executeCommand: () => node.subdivide() },
             earlyDropFunction: cmd => !cmd.requester.visible || !this.visible,

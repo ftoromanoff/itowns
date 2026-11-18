@@ -73,10 +73,10 @@ abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> ext
     constructor(source: S, depth: number, numPoints = -1) {
         super();
 
-        this.source = source;
-
         this.parent = undefined;
         this.children = undefined;
+
+        this.source = source;
 
         this.depth = depth;
         this.numPoints = numPoints;
@@ -116,7 +116,8 @@ abstract class PointCloudNode<S extends PointCloudSource = PointCloudSource> ext
     }
 
     async subdivide(): Promise<this[]> {
-        await this.loadHierarchy();
+        // No await when the hierarchy is already known -> createChildren is called synchronously
+        if (!this.hierarchyIsLoaded) { await this.loadHierarchy(); }
         if (!this.children) { this.createChildren(); }
         return (this.children as this[]);
     }
