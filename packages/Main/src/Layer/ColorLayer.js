@@ -170,10 +170,6 @@ class ColorLayer extends RasterLayer {
 
         return super.addRasterTile(node);
     }
-
-    getRasterTileParent(node) {
-        return node.parent.material?.getTile(this.id);
-    }
 }
 
 export default ColorLayer;

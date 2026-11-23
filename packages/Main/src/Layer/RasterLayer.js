@@ -80,7 +80,8 @@ class RasterLayer extends Layer {
         const rasterTile = new this.rasterTile(this, tiles);
 
         if (!this.noTextureParentOutsideLimit || tiles.some(t => this.source.hasData(t))) {
-            rasterTile.initFromParent(this.getRasterTileParent(node));
+            const rasterTileParent = node.parent.material?.getTile(this.id);
+            rasterTile.initFromParent(rasterTileParent);
         }
 
         node.material.addRasterTile(rasterTile);

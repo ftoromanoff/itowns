@@ -131,10 +131,6 @@ class ElevationLayer extends RasterLayer {
         node.setBBoxZ();
     }
 
-    getRasterTileParent(node) {
-        return node.parent.material?.getCurrentElevationTile();
-    }
-
     onNodeCreated(node) {
         const updateBBox = () => node.setBBoxZ();
 
